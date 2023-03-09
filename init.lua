@@ -107,12 +107,12 @@ local n_yegeng = fk.CreateTriggerSkill{
 n_zy:addSkill(n_yegeng)
 Fk:loadTranslationTable{
   ["n_zy"] = "ＺＹ",
-	["n_juanlao"] = "巨佬",
-	["@n_juanlao"] = "巨佬",
-	[":n_juanlao"] = "阶段技。你可以视为使用了本回合你使用过的上一张非转化普通锦囊牌。",
-	["n_yegeng"] = "夜更",
-	["@n_yegeng"] = "夜更",
-	[":n_yegeng"] = "锁定技。结束阶段，若你本回合使用普通锦囊牌数量不小于3，你进行一个额外的回合。",
+  ["n_juanlao"] = "巨佬",
+  ["@n_juanlao"] = "巨佬",
+  [":n_juanlao"] = "阶段技。你可以视为使用了本回合你使用过的上一张非转化普通锦囊牌。",
+  ["n_yegeng"] = "夜更",
+  ["@n_yegeng"] = "夜更",
+  [":n_yegeng"] = "锁定技。结束阶段，若你本回合使用普通锦囊牌数量不小于3，你进行一个额外的回合。",
 }
 
 return { extension }
