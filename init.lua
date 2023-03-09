@@ -115,4 +115,82 @@ Fk:loadTranslationTable{
   [":n_yegeng"] = "锁定技。结束阶段，若你本回合使用普通锦囊牌数量不小于3，你进行一个额外的回合。",
 }
 
+local n_mabaoguo = General(extension, "n_mabaoguo", "qun", 4)
+local n_hunyuan = fk.CreateTriggerSkill{
+  name = "n_hunyuan",
+  anim_type = "offensive",
+  mute = true,
+  events = {fk.DamageCaused, fk.Damage},
+  can_trigger = function(self, event, target, player, data)
+    if not (target == player and player:hasSkill(self.name)) then return end
+    if event == fk.Damage then
+      return player:getMark("n_hydmg1") == player:getMark("n_hydmg2") and
+        player:getMark("n_hydmg2") == player:getMark("n_hydmg3")
+    else
+      return true
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.DamageCaused then
+			local clist = {"n_toNormal", "n_toThunder", "n_toFire", "cancel"}
+			local clist2 = {"n_toNormal", "n_toThunder", "n_toFire", "cancel"}
+      table.remove(clist, data.damageType)
+      local choice = room:askForChoice(player, clist, self.name)
+      if choice ~= "cancel" then
+        self.cost_data = table.indexOf(clist2, choice)
+        return true
+      end
+    else
+      local result = room:askForChoosePlayers(player, table.map(room:getAlivePlayers(), function(p)
+        return p.id
+      end), 1, 1, "#n_hy-ask", self.name)
+      if #result > 0 then
+        self.cost_data = result[1]
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:notifySkillInvoked(player, self.name)
+    if event == fk.DamageCaused then
+      room:broadcastSkillInvoke(self.name, self.cost_data)
+      data.damageType = self.cost_data
+    else
+      room:broadcastSkillInvoke(self.name, table.random{4, 5})
+      room:damage{
+        from = player,
+        to = room:getPlayerById(self.cost_data),
+        damage = 1
+      }
+    end
+  end,
+
+  refresh_events = {fk.Damage},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    room:addPlayerMark(player, "n_hydmg" .. data.damageType, data.damage)
+    room:setPlayerMark(player, "@" .. self.name, string.format("%d-%d-%d",
+      player:getMark("n_hydmg1"),
+      player:getMark("n_hydmg2"),
+      player:getMark("n_hydmg3")
+    ))
+  end,
+}
+n_mabaoguo:addSkill(n_hunyuan)
+Fk:loadTranslationTable{
+	["n_mabaoguo"] = "马保国",
+	["n_hunyuan"] = "浑元",
+	["@n_hunyuan"] = "浑元",
+	[":n_hunyuan"] = "你造成伤害时，可改变伤害属性。你造成伤害后，若你造成过的三种属性伤害值都相等，你可以对一名角色造成一点伤害。",
+	["#n_hy-ask"] = "浑元：你可以对一名角色造成一点伤害",
+	["n_toFire"] = "转换成火属性伤害",
+	["n_toThunder"] = "转换成雷属性伤害",
+	["n_toNormal"] = "转换成无属性伤害",
+}
+
 return { extension }
