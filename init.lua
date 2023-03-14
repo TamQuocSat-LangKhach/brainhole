@@ -47,14 +47,7 @@ local n_juanlao = fk.CreateViewAsSkill{
 
   card_filter = function() return false end,
   view_as = function(self, cards)
-    -- FIXME: this is a bug of FK!! server side should set Self before calling view_as
-    local p
-    if RoomInstance then
-      p = RoomInstance.current
-    else
-      p = Self
-    end
-    local cname = p:getMark("@n_juanlao")
+    local cname = Self:getMark("@n_juanlao")
     if cname == 0 then return end
     local ret = Fk:cloneCard(cname)
     return ret
@@ -72,12 +65,7 @@ local n_yegeng = fk.CreateTriggerSkill{
       player.phase == Player.Finish and self.can_yegeng
   end,
   on_use = function(self, event, target, player, data)
-    -- TODO: implement for player:gainAnExtraTurn
-    local room = player.room
-    local current = room.current
-    room.current = player
-    GameEvent(GameEvent.Turn):exec()
-    room.current = current
+    player:gainAnExtraTurn()
   end,
 
   refresh_events = {fk.EventPhaseStart, fk.CardUseFinished},
@@ -94,21 +82,18 @@ local n_yegeng = fk.CreateTriggerSkill{
     local room = player.room
     local mark_name = "@n_yegeng"
     if event == fk.EventPhaseStart then
-      -- FIXME: this is bug of FK! unable to show mark num
-      self.can_yegeng = tonumber(player:getMark(mark_name)) >= 3
+      self.can_yegeng = player:getMark(mark_name) >= 3
       room:setPlayerMark(player, mark_name, 0)
     else
-      room:setPlayerMark(player, mark_name, tostring(
-        tonumber(player:getMark(mark_name)) + 1
-      ))
+      room:addPlayerMark(player, mark_name, 1)
     end
   end
 }
 n_zy:addSkill(n_yegeng)
 Fk:loadTranslationTable{
   ["n_zy"] = "ＺＹ",
-  ["n_juanlao"] = "巨佬",
-  ["@n_juanlao"] = "巨佬",
+  ["n_juanlao"] = "奆佬",
+  ["@n_juanlao"] = "奆佬",
   [":n_juanlao"] = "阶段技。你可以视为使用了本回合你使用过的上一张非转化普通锦囊牌。",
   ["n_yegeng"] = "夜更",
   ["@n_yegeng"] = "夜更",
