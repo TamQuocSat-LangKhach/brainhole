@@ -94,10 +94,12 @@ Fk:loadTranslationTable{
   ["n_zy"] = "ＺＹ",
   ["n_juanlao"] = "奆佬",
   ["@n_juanlao"] = "奆佬",
-  [":n_juanlao"] = "阶段技。你可以视为使用了本回合你使用过的上一张非转化普通锦囊牌。",
+  [":n_juanlao"] = "阶段技。你可以视为使用了本回合你使用过的" ..
+    "上一张非转化普通锦囊牌。",
   ["n_yegeng"] = "夜更",
   ["@n_yegeng"] = "夜更",
-  [":n_yegeng"] = "锁定技。结束阶段，若你本回合使用普通锦囊牌数量不小于3，你进行一个额外的回合。",
+  [":n_yegeng"] = "锁定技。结束阶段，若你本回合使用普通锦囊牌数量不小于3，" ..
+    "你进行一个额外的回合。",
 }
 
 local n_mabaoguo = General(extension, "n_mabaoguo", "qun", 4)
@@ -127,9 +129,12 @@ local n_hunyuan = fk.CreateTriggerSkill{
         return true
       end
     else
-      local result = room:askForChoosePlayers(player, table.map(room:getAlivePlayers(), function(p)
-        return p.id
-      end), 1, 1, "#n_hy-ask", self.name)
+      local result = room:askForChoosePlayers(player, table.map(
+        room:getAlivePlayers(),
+        function(p)
+          return p.id
+        end
+      ), 1, 1, "#n_hy-ask", self.name)
       if #result > 0 then
         self.cost_data = result[1]
         return true
@@ -171,7 +176,9 @@ Fk:loadTranslationTable{
 	["n_mabaoguo"] = "马保国",
 	["n_hunyuan"] = "浑元",
 	["@n_hunyuan"] = "浑元",
-	[":n_hunyuan"] = "你造成伤害时，可改变伤害属性。你造成伤害后，若你造成过的三种属性伤害值都相等，你可以对一名角色造成一点伤害。",
+	[":n_hunyuan"] = "你造成伤害时，可改变伤害属性。" ..
+    "你造成伤害后，若你造成过的三种属性伤害值都相等，" ..
+    "你可以对一名角色造成一点伤害。",
 	["#n_hy-ask"] = "浑元：你可以对一名角色造成一点伤害",
 	["n_toFire"] = "转换成火属性伤害",
 	["n_toThunder"] = "转换成雷属性伤害",
