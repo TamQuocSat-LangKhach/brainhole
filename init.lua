@@ -120,8 +120,8 @@ local n_hunyuan = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local room = player.room
     if event == fk.DamageCaused then
-			local clist = {"n_toNormal", "n_toThunder", "n_toFire", "cancel"}
-			local clist2 = {"n_toNormal", "n_toThunder", "n_toFire", "cancel"}
+      local clist = {"n_toNormal", "n_toThunder", "n_toFire", "cancel"}
+      local clist2 = {"n_toNormal", "n_toThunder", "n_toFire", "cancel"}
       table.remove(clist, data.damageType)
       local choice = room:askForChoice(player, clist, self.name)
       if choice ~= "cancel" then
@@ -183,6 +183,59 @@ Fk:loadTranslationTable{
 	["n_toFire"] = "转换成火属性伤害",
 	["n_toThunder"] = "转换成雷属性伤害",
 	["n_toNormal"] = "转换成无属性伤害",
+}
+
+local n_qunlingdao = General(extension, "n_qunlingdao", "qun", 3)
+local n_lingxiu = fk.CreateTriggerSkill{
+  name = "n_lingxiu",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self.name) then return end
+    local room = player.room
+    if #table.filter(room:getOtherPlayers(player), function(p)
+      return #p:getCardIds(Player.Hand) > #player:getCardIds(Player.Hand)
+    end) == 0 then return end
+
+    for _, move in ipairs(data) do
+      if move.to == player.id and move.toArea == Card.PlayerHand then
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:delay(240)
+    player:drawCards(1)
+  end,
+}
+n_qunlingdao:addSkill(n_lingxiu)
+local n_qunzhi = fk.CreateViewAsSkill{
+  name = "n_qunzhi",
+  pattern = "amazing_grace",
+  card_filter = function(self, to_select, selected)
+    return Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
+  end,
+  view_as = function(self, cards)
+    if #cards ~= #Self:getCardIds(Player.Hand) then
+      return nil
+    end
+    local c = Fk:cloneCard("amazing_grace")
+    c:addSubcards(cards)
+    return c
+  end,
+  enabled_at_play = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and
+      player.maxHp < #player:getCardIds(Player.Hand)
+  end,
+}
+n_qunlingdao:addSkill(n_qunzhi)
+Fk:loadTranslationTable{
+  ["n_qunlingdao"] = "群领导",
+  ["n_lingxiu"] = "领袖",
+  [":n_lingxiu"] = "锁定技。你获得手牌后，若你的手牌数不为场上最多，你摸一张牌。",
+  ["n_qunzhi"] = "群智",
+  [":n_qunzhi"] = "阶段技。若你的体力上限小于你的手牌数，你可以将所有手牌当五谷丰登使用。",
 }
 
 return { extension }
