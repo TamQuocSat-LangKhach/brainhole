@@ -173,16 +173,16 @@ local n_hunyuan = fk.CreateTriggerSkill{
 }
 n_mabaoguo:addSkill(n_hunyuan)
 Fk:loadTranslationTable{
-	["n_mabaoguo"] = "马保国",
-	["n_hunyuan"] = "浑元",
-	["@n_hunyuan"] = "浑元",
-	[":n_hunyuan"] = "你造成伤害时，可改变伤害属性。" ..
+  ["n_mabaoguo"] = "马保国",
+  ["n_hunyuan"] = "浑元",
+  ["@n_hunyuan"] = "浑元",
+  [":n_hunyuan"] = "你造成伤害时，可改变伤害属性。" ..
     "你造成伤害后，若你造成过的三种属性伤害值都相等，" ..
     "你可以对一名角色造成一点伤害。",
-	["#n_hy-ask"] = "浑元：你可以对一名角色造成一点伤害",
-	["n_toFire"] = "转换成火属性伤害",
-	["n_toThunder"] = "转换成雷属性伤害",
-	["n_toNormal"] = "转换成无属性伤害",
+  ["#n_hy-ask"] = "浑元：你可以对一名角色造成一点伤害",
+  ["n_toFire"] = "转换成火属性伤害",
+  ["n_toThunder"] = "转换成雷属性伤害",
+  ["n_toNormal"] = "转换成无属性伤害",
 }
 
 local n_qunlingdao = General(extension, "n_qunlingdao", "qun", 3)
@@ -210,23 +210,44 @@ local n_lingxiu = fk.CreateTriggerSkill{
   end,
 }
 n_qunlingdao:addSkill(n_lingxiu)
+local n_qunzhi_choices = {
+  "dismantlement", "snatch", "duel", "collateral",
+  "ex_nihilo", "savage_assault", "archery_attack", "god_salvation",
+  "amazing_grace", "iron_chain", "fire_attack",
+}
 local n_qunzhi = fk.CreateViewAsSkill{
   name = "n_qunzhi",
-  pattern = "amazing_grace",
+  interaction = function(self)
+    local mark = Self:getMark("n_qunzhi_choices")
+    if mark == 0 then mark = nil end
+    return UI.ComboBox {
+      choices = mark or n_qunzhi_choices
+    }
+  end,
   card_filter = function(self, to_select, selected)
-    return Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
+    return Fk:currentRoom():getCardArea(to_select) ~= Player.Equip and
+      #selected < math.ceil(Self:getHandcardNum() / 2)
   end,
   view_as = function(self, cards)
-    if #cards ~= #Self:getCardIds(Player.Hand) then
+    if #cards ~= math.ceil(Self:getHandcardNum() / 2) then
       return nil
     end
-    local c = Fk:cloneCard("amazing_grace")
+    local c = Fk:cloneCard(self.interaction.data)
     c:addSubcards(cards)
     return c
   end,
   enabled_at_play = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and
-      player.maxHp < #player:getCardIds(Player.Hand)
+      player.hp <= player:getHandcardNum()
+  end,
+  before_use = function(self, player, use)
+    local room = player.room
+    local card = use.card.name
+    local markTab = player:getMark("n_qunzhi_choices")
+    if markTab == 0 then markTab = table.clone(n_qunzhi_choices) end
+    table.removeOne(markTab, card)
+    if #markTab == 0 then markTab = table.clone(n_qunzhi_choices) end
+    room:setPlayerMark(player, "n_qunzhi_choices", markTab)
   end,
 }
 n_qunlingdao:addSkill(n_qunzhi)
@@ -235,7 +256,14 @@ Fk:loadTranslationTable{
   ["n_lingxiu"] = "领袖",
   [":n_lingxiu"] = "锁定技。你获得手牌后，若你的手牌数不为场上最多，你摸一张牌。",
   ["n_qunzhi"] = "群智",
-  [":n_qunzhi"] = "阶段技。若你的体力上限小于你的手牌数，你可以将所有手牌当五谷丰登使用。",
+  [":n_qunzhi"] = "阶段技。若你的体力值不超过你的手牌数，" ..
+    "你可以将一半的手牌当一张普通锦囊牌（无懈除外）使用。" ..
+    "（每种限用一次，你因本技能使用过全部普通锦囊牌后技能状态刷新。）",
+  ["~n_qunlingdao"] = "我还会继续看群的...",
+  ["$n_lingxiu1"] = "我才是领导！",
+  ["$n_lingxiu2"] = "都听我的！",
+  ["$n_qunzhi1"] = "集思广益！",
+  ["$n_qunzhi2"] = "群众的智慧是无穷的！",
 }
 
 return { extension }
