@@ -62,10 +62,14 @@ local n_yegeng = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name) and
-      player.phase == Player.Finish and self.can_yegeng
+      player.phase == Player.Finish
   end,
   on_use = function(self, event, target, player, data)
-    player:gainAnExtraTurn()
+    if self.cost_data then
+      player:gainAnExtraTurn()
+    else
+      player:drawCards(1, self.name)
+    end
   end,
 
   refresh_events = {fk.EventPhaseStart, fk.CardUseFinished},
@@ -82,7 +86,7 @@ local n_yegeng = fk.CreateTriggerSkill{
     local room = player.room
     local mark_name = "@n_yegeng"
     if event == fk.EventPhaseStart then
-      self.can_yegeng = player:getMark(mark_name) >= 3
+      self.cost_data = player:getMark(mark_name) >= 3
       room:setPlayerMark(player, mark_name, 0)
     else
       room:addPlayerMark(player, mark_name, 1)
@@ -99,7 +103,7 @@ Fk:loadTranslationTable{
   ["n_yegeng"] = "夜更",
   ["@n_yegeng"] = "夜更",
   [":n_yegeng"] = "锁定技。结束阶段，若你本回合使用普通锦囊牌数量不小于3，" ..
-    "你进行一个额外的回合。",
+    "你进行一个额外的回合，否则你摸一张牌。",
 }
 
 local n_mabaoguo = General(extension, "n_mabaoguo", "qun", 4)
@@ -177,7 +181,8 @@ Fk:loadTranslationTable{
   ["n_hunyuan"] = "浑元",
   ["@n_hunyuan"] = "浑元",
   [":n_hunyuan"] = "你造成伤害时，可改变伤害属性。" ..
-    "你造成伤害后，若你造成过的三种属性伤害值都相等，" ..
+    "你造成伤害后，记录你造成的这种属性伤害的伤害值，" ..
+    "然后若你造成过的普、火、雷这三种属性伤害值都相等，" ..
     "你可以对一名角色造成一点伤害。",
   ["#n_hy-ask"] = "浑元：你可以对一名角色造成一点伤害",
   ["n_toFire"] = "转换成火属性伤害",
@@ -450,6 +455,131 @@ Fk:loadTranslationTable{
   ["$n_songji2"] = "所以是数一数二的烧鸡！",
   ["@n_songji"] = "颂鸡：你可以将刚才摸到的牌中的一张当【杀】或者【桃】使用",
   ["@n_songji_slash"] = "颂鸡：你已经做出了数一数二的烧鸡，现在请选择【杀】的目标",
+}
+
+local n_hospair = General(extension, "n_hospair", "qun", 3)
+n_hospair.gender = General.Female
+n_hospair.hidden = true
+n_hospair.total_hidden = true
+local n_fudu = fk.CreateTriggerSkill{
+  name = "n_fudu",
+  anim_type = "offensive",
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self.name) then return end
+    if player:isKongcheng() then return end
+
+    local use = data ---@type CardUseStruct
+    local card = use.card
+    if not (use.from ~= player.id and
+      #use.tos == 1 and
+      (card.type == Card.TypeBasic or
+       (card.type == Card.TypeTrick and card.sub_type ~= Card.SubtypeDelayedTrick)
+    )) then
+
+      return
+    end
+
+    local room = player.room
+    local target = use.tos[1][1] == player.id
+      and room:getPlayerById(use.from)
+      or room:getPlayerById(use.tos[1][1])
+
+    if target.dead or player:prohibitUse(use.card)
+      or player:isProhibited(target, use.card) then
+
+      return
+    end
+
+    -- TODO: fix this
+    if card.name == "peach" then
+      return target:isWounded()
+    elseif card.name == "snatch" or card.name == "dismantlement" then
+      return not target:isAllNude()
+    elseif card.name == "fire_attack" then
+      return not target:isKongcheng()
+    elseif card.name == "collateral" then
+      return target:getEquipment(Card.SubtypeWeapon) ~= nil
+    end
+
+    return true
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local use = data ---@type CardUseStruct
+    local target = use.tos[1][1] == player.id
+      and room:getPlayerById(use.from)
+      or room:getPlayerById(use.tos[1][1])
+
+    local c = room:askForCard(player, 1, 1, false, self.name, true, ".",
+      "@n_fudu::" .. target.id .. ":" .. use.card.name)[1]
+
+    if c then
+      self.cost_data = c
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local use = {}
+    use.from = player.id
+    use.tos = data.tos[1][1] == player.id
+      and { { data.from } }
+      or table.clone(data.tos)
+
+    local card = Fk:cloneCard(data.card.name)
+    card:addSubcard(self.cost_data)
+    card.skillName = self.name
+    use.card = card
+    use.extraUse = true
+    room:useCard(use)
+  end,
+}
+n_hospair:addSkill(n_fudu)
+local n_mingzhe = fk.CreateTriggerSkill{
+  name = "n_mingzhe",
+  anim_type = "defensive",
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) and player.phase == Player.NotActive and
+      player:usedSkillTimes(self.name, Player.HistoryPhase) < 2 then
+      self.trigger_times = 0
+      for _, move in ipairs(data) do
+        if move.from == player.id and (move.moveReason == fk.ReasonUse or move.moveReason == fk.ReasonResonpse or move.moveReason == fk.ReasonDiscard) then
+          for _, info in ipairs(move.moveInfo) do
+            if Fk:getCardById(info.cardId).color == Card.Red then
+              self.trigger_times = self.trigger_times + 1
+            end
+          end
+        end
+      end
+      return self.trigger_times > 0
+    end
+  end,
+  on_trigger = function(self, event, target, player, data)
+    local ret
+    for i = 1, self.trigger_times do
+      ret = self:doCost(event, target, player, data)
+      if ret then return ret end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(1, self.name)
+  end,
+}
+n_hospair:addSkill(n_mingzhe)
+Fk:loadTranslationTable{
+  ["n_hospair"] = "惑神",
+  ["designer:n_hospair"] = "Notify",
+  ["illustrator:n_hospair"] = "来自网络",
+  ["n_fudu"] = "复读",
+  ["$n_fudu"] = "+1",
+  [":n_fudu"] = "其他角色的指定唯一目标的基本牌或者普通锦囊牌结算完成后: <br/>" ..
+  "① 若你是唯一目标，你可以将一张手牌当做此牌对使用者使用。<br/>" ..
+  "② 若你不是唯一目标，你可以将一张手牌当做此牌对那名唯一目标使用。",
+  ["@n_fudu"] = "复读：你现在可以将一张手牌当做 %arg 对 %dest 使用",
+  ["n_mingzhe"] = "明哲",
+  [":n_mingzhe"] = "每回合限两次，当你于回合外使用、打出或因弃置而失去一张红色牌时，你可以摸一张牌。",
 }
 
 return { extension }
