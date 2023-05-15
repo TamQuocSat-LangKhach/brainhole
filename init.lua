@@ -420,7 +420,9 @@ local n_songji = fk.CreateTriggerSkill{
     use.extraUse = true
     room:useCard(use)
 
-    player:drawCards(1, self.name)
+    if player:usedSkillTimes(self.name) < 3 then
+      player:drawCards(1, self.name)
+    end
   end,
 }
 n_xujiale:addSkill(n_songji)
@@ -429,6 +431,7 @@ Fk:loadTranslationTable{
   ["~n_xujiale"] = "最后一次啊，注意看啊",
   ["#n_xujiale"] = "厨邦大师",
   ["n_pengji"] = "烹鸡",
+  ["n_pengji_ac"] = "烹鸡",
   ["designer:n_xujiale"] = "穈穈哒的招来",
   ["cv:n_xujiale"] = "徐嘉乐",
   ["illustrator:n_xujiale"] = "视频截图",
@@ -439,7 +442,8 @@ Fk:loadTranslationTable{
   ["$n_pengji2"] = "基本上很均匀了这个皮",
   ["n_songji"] = "颂鸡",
   [":n_songji"] = "当你因〖烹鸡〗而摸牌后，若摸的牌中有牌名和你弃置的牌中的一张相同，" ..
-  "你可以将这些相同的牌中的一张当做【杀】（不计入次数）/【桃】使用并摸一张牌。",
+    "你可以将这些相同的牌中的一张当做【杀】（不计入次数）/【桃】使用，" ..
+    "然后若本回合你发动此技能次数小于3，摸一张牌。",
   ["$n_songji1"] = "这个烧鸡，皮酥脆，肉滑有汁，骨都带味",
   ["$n_songji2"] = "所以是数一数二的烧鸡！",
   ["@n_songji"] = "颂鸡：你可以将刚才摸到的牌中的一张当【杀】或者【桃】使用",
