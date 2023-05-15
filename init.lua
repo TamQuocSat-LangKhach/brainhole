@@ -582,4 +582,52 @@ Fk:loadTranslationTable{
   [":n_mingzhe"] = "每回合限两次，当你于回合外使用、打出或因弃置而失去一张红色牌时，你可以摸一张牌。",
 }
 
-return { extension }
+local extension_card = Package("brainhole_cards", Package.CardPack)
+
+local brickSkill = fk.CreateActiveSkill{
+  name = "n_brick_skill",
+  target_num = 1,
+  target_filter = function(self, to_select, selected, _, card)
+    if #selected < self:getMaxTargetNum(Self, card) then
+      local player = Fk:currentRoom():getPlayerById(to_select)
+      return Self ~= player and
+        (self:getDistanceLimit(Self, card) -- for no distance limit for slash
+        + Self:getAttackRange()
+        >= Self:distanceTo(player))
+    end
+  end,
+  on_effect = function(self, room, effect)
+    local from = room:getPlayerById(effect.from)
+    local to = room:getPlayerById(effect.to)
+
+    room:obtainCard(to, effect.card, true, fk.ReasonGive)
+
+    room:damage({
+      from = from,
+      to = to,
+      card = effect.card,
+      damage = 1 + (effect.additionalDamage or 0),
+      damageType = fk.NormalDamage,
+      skillName = self.name
+    })
+  end
+}
+local brick = fk.CreateBasicCard{
+  name = "n_brick",
+  number = 6,
+  suit = Card.Heart,
+  is_damage_card = true,
+  skill = brickSkill,
+}
+extension_card:addCards{ brick }
+
+Fk:loadTranslationTable{
+  ["brainhole_cards"] = "脑洞包卡牌",
+  ["n_brick"] = "砖",
+  [":n_brick"] = "基本牌<br />" ..
+    "<b>时机</b>：出牌阶段<br />" ..
+    "<b>目标</b>：攻击范围内的一名其他角色<br />" ..
+    "<b>效果</b>：交给其此牌，对目标角色造成1点伤害。",
+}
+
+return { extension, extension_card }
