@@ -284,6 +284,8 @@ local n_pengji = fk.CreateTriggerSkill{
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self.name) then return end
+    if player:getMark("n_songji-phase") > 0 then return end
+
     for _, move in ipairs(data) do
       if move.to == player.id and move.moveReason == fk.ReasonDraw
         and move.skillName ~= self.name then
@@ -340,6 +342,7 @@ local n_songji = fk.CreateTriggerSkill{
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self.name) then return end
+    if player:getMark("n_songji-phase") > 0 then return end
 
     for _, move in ipairs(data) do
       if move.skillName == "n_pengji" and move.to == player.id
@@ -420,9 +423,8 @@ local n_songji = fk.CreateTriggerSkill{
     use.extraUse = true
     room:useCard(use)
 
-    if player:usedSkillTimes(self.name) < 3 then
-      player:drawCards(1, self.name)
-    end
+    room:addPlayerMark(player, "n_songji-phase", 1)
+    player:drawCards(1, self.name)
   end,
 }
 n_xujiale:addSkill(n_songji)
@@ -443,7 +445,7 @@ Fk:loadTranslationTable{
   ["n_songji"] = "颂鸡",
   [":n_songji"] = "当你因〖烹鸡〗而摸牌后，若摸的牌中有牌名和你弃置的牌中的一张相同，" ..
     "你可以将这些相同的牌中的一张当做【杀】（不计入次数）/【桃】使用，" ..
-    "然后若本回合你发动此技能次数小于3，摸一张牌。",
+    "令你本阶段不能再使用〖烹鸡〗和〖颂鸡〗并摸一张牌。",
   ["$n_songji1"] = "这个烧鸡，皮酥脆，肉滑有汁，骨都带味",
   ["$n_songji2"] = "所以是数一数二的烧鸡！",
   ["@n_songji"] = "颂鸡：你可以将刚才摸到的牌中的一张当【杀】或者【桃】使用",
