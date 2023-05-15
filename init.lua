@@ -472,7 +472,8 @@ local n_fudu = fk.CreateTriggerSkill{
     local use = data ---@type CardUseStruct
     local card = use.card
     if not (use.from ~= player.id and
-      #use.tos == 1 and
+      use.tos and #use.tos == 1 and
+      (not card:isVirtual()) and
       (card.type == Card.TypeBasic or
        (card.type == Card.TypeTrick and card.sub_type ~= Card.SubtypeDelayedTrick)
     )) then
@@ -484,6 +485,14 @@ local n_fudu = fk.CreateTriggerSkill{
     local target = use.tos[1][1] == player.id
       and room:getPlayerById(use.from)
       or room:getPlayerById(use.tos[1][1])
+
+    -- if not table.find(player:getCardIds(Player.Hand), function(id)
+    --   return Fk:getCardById(id).color == card.color
+    -- end) then
+
+    --   return
+    -- end
+
 
     if target.dead or player:prohibitUse(use.card)
       or player:isProhibited(target, use.card) then
@@ -511,7 +520,12 @@ local n_fudu = fk.CreateTriggerSkill{
       and room:getPlayerById(use.from)
       or room:getPlayerById(use.tos[1][1])
 
-    local c = room:askForCard(player, 1, 1, false, self.name, true, ".",
+    local ids = table.filter(player:getCardIds(Player.Hand), function(id)
+      return Fk:getCardById(id).color == use.card.color
+    end)
+
+    local c = room:askForCard(player, 1, 1, false, self.name, true,
+      tostring(Exppattern{ id = ids }),
       "@n_fudu::" .. target.id .. ":" .. use.card.name)[1]
 
     if c then
@@ -542,7 +556,7 @@ local n_mingzhe = fk.CreateTriggerSkill{
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self.name) and player.phase == Player.NotActive and
-      player:usedSkillTimes(self.name, Player.HistoryPhase) < 2 then
+      player:usedSkillTimes(self.name, Player.HistoryPhase) < 3 then
       self.trigger_times = 0
       for _, move in ipairs(data) do
         if move.from == player.id and (move.moveReason == fk.ReasonUse or move.moveReason == fk.ReasonResonpse or move.moveReason == fk.ReasonDiscard) then
@@ -574,12 +588,12 @@ Fk:loadTranslationTable{
   ["illustrator:n_hospair"] = "来自网络",
   ["n_fudu"] = "复读",
   ["$n_fudu"] = "+1",
-  [":n_fudu"] = "其他角色的指定唯一目标的基本牌或者普通锦囊牌结算完成后: <br/>" ..
-  "① 若你是唯一目标，你可以将一张手牌当做此牌对使用者使用。<br/>" ..
-  "② 若你不是唯一目标，你可以将一张手牌当做此牌对那名唯一目标使用。",
+  [":n_fudu"] = "其他角色的指定唯一目标的非转化的基本牌或者普通锦囊牌结算完成后: <br/>" ..
+  "① 若你是唯一目标，你可以将颜色相同的一张手牌当做此牌对使用者使用。（无视距离）<br/>" ..
+  "② 若你不是唯一目标，你可以将颜色相同的一张手牌当做此牌对那名唯一目标使用。（无视距离）",
   ["@n_fudu"] = "复读：你现在可以将一张手牌当做 %arg 对 %dest 使用",
   ["n_mingzhe"] = "明哲",
-  [":n_mingzhe"] = "每回合限两次，当你于回合外使用、打出或因弃置而失去一张红色牌时，你可以摸一张牌。",
+  [":n_mingzhe"] = "每回合限三次，当你于回合外使用、打出或因弃置而失去一张红色牌时，你可以摸一张牌。",
 }
 
 local extension_card = Package("brainhole_cards", Package.CardPack)
