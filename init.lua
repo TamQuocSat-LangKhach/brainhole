@@ -556,7 +556,7 @@ local n_mingzhe = fk.CreateTriggerSkill{
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self.name) and player.phase == Player.NotActive and
-      player:usedSkillTimes(self.name, Player.HistoryPhase) < 3 then
+      player:usedSkillTimes(self.name, Player.HistoryPhase) < 2 then
       self.trigger_times = 0
       for _, move in ipairs(data) do
         if move.from == player.id and (move.moveReason == fk.ReasonUse or move.moveReason == fk.ReasonResonpse or move.moveReason == fk.ReasonDiscard) then
@@ -593,7 +593,7 @@ Fk:loadTranslationTable{
   "② 若你不是唯一目标，你可以将颜色相同的一张手牌当做此牌对那名唯一目标使用。（无视距离）",
   ["@n_fudu"] = "复读：你现在可以将一张手牌当做 %arg 对 %dest 使用",
   ["n_mingzhe"] = "明哲",
-  [":n_mingzhe"] = "每回合限三次，当你于回合外使用、打出或因弃置而失去一张红色牌时，你可以摸一张牌。",
+  [":n_mingzhe"] = "每回合限两次，当你于回合外使用、打出或因弃置而失去一张红色牌时，你可以摸一张牌。",
 }
 
 local extension_card = Package("brainhole_cards", Package.CardPack)
