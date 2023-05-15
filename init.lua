@@ -459,8 +459,8 @@ Fk:loadTranslationTable{
 
 local n_hospair = General(extension, "n_hospair", "qun", 3)
 n_hospair.gender = General.Female
-n_hospair.hidden = true
-n_hospair.total_hidden = true
+-- n_hospair.hidden = true
+-- n_hospair.total_hidden = true
 local n_fudu = fk.CreateTriggerSkill{
   name = "n_fudu",
   anim_type = "offensive",
