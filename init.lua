@@ -596,6 +596,34 @@ Fk:loadTranslationTable{
   [":n_mingzhe"] = "每回合限两次，当你于回合外使用、打出或因弃置而失去一张红色牌时，你可以摸一张牌。",
 }
 
+local n_miaosha = General(extension, "n_miaosha", "wei", 4)
+local n_shunsha = fk.CreateTriggerSkill{
+  name = "n_shunsha",
+  anim_type = "offensive",
+  events = {fk.Damage},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and
+      data.to:isAlive() and player.hp <= data.to.hp
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:damage {
+      from = player,
+      to = data.to,
+      damage = 1,
+    }
+  end,
+}
+n_miaosha:addSkill(n_shunsha)
+Fk:loadTranslationTable{
+  ["n_miaosha"] = "郭修",
+  ["n_shunsha"] = "暗刺",
+  [":n_shunsha"] = "当你造成伤害后，若你的体力值不大于伤害目标的体力值，" ..
+    "则你可以对伤害目标造成一点伤害。",
+
+
+}
+
 local extension_card = Package("brainhole_cards", Package.CardPack)
 
 local brickSkill = fk.CreateActiveSkill{
