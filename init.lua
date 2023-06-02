@@ -188,6 +188,12 @@ Fk:loadTranslationTable{
   ["n_toFire"] = "转换成火属性伤害",
   ["n_toThunder"] = "转换成雷属性伤害",
   ["n_toNormal"] = "转换成无属性伤害",
+  ["$n_hunyuan1"] = "一个左正蹬~（吭）",
+  ["$n_hunyuan2"] = "一个右鞭腿！",
+  ["$n_hunyuan3"] = "一个左刺拳。",
+  ["$n_hunyuan4"] = "三维立体浑元劲，打出松果糖豆闪电鞭",
+  ["$n_hunyuan5"] = "耗子尾汁。",
+  ["~n_mabaoguo"] = "这两个年轻人不讲武德，来，骗！来，偷袭！我六十九岁的老同志，这好吗这不好。",
 }
 
 local n_qunlingdao = General(extension, "n_qunlingdao", "qun", 3)
@@ -666,6 +672,113 @@ Fk:loadTranslationTable{
   ["$n_daotu2"] = "你的图，现在是我的了！",
   [":n_daotu"] = "每回合限一次，当其他角色使用的非转化且非虚拟的牌结算完成后，" ..
     "若你没有同名的手牌，则你可以获得之。每种牌名限获得一次。",
+}
+
+Fk:loadTranslationTable{
+  ["n_jiege"] = "杰哥",
+  ["#n_jiege"] = "转大人指导",
+  ["designer:n_jiege"] = "zyc12241252",
+  ["illustrator:n_jiege"] = "网络",
+  ["~n_jiege"] = "阿玮…你要干嘛…对不起…",
+  ["n_yaoyin"] = "邀饮",
+  [":n_yaoyin"] = "限定技，出牌阶段，你可以失去一点体力并交给一名其他角色一张手牌（不能是你的上家），令其与你的上家交换座位，然后你视为对你和你的上家使用了【酒】。",
+  ["$n_yaoyin1"] = "我一个人住，我的房子还蛮大的，欢迎你们来我家玩。",
+  ["$n_yaoyin2"] = "如果要来的话，我可以带你们去超商，买一些好吃的哦。",
+  ["n_kangkang"] = "康康",
+  [":n_kangkang"] = "每回合限两次，当你对你的上家或下家造成伤害时，你可以观看其手牌并获得其中一张。",
+  ["$n_kangkang1"] = "哎呦，你脸红了？来，让我康康~",
+  ["$n_kangkang2"] = "听话！让我康康！",
+}
+
+local n_awei = General(extension, "n_awei", "qun", 3)
+local n_suijie = fk.CreateTriggerSkill{
+  name = "n_suijie",
+  anim_type = "drawcard",
+  events = {fk.TargetConfirmed},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and
+      data.from ~= player.id and
+      table.contains(
+        { "peach", "analeptic", "amazing_grace", "god_salvation" },
+        data.card.name)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    if room:askForSkillInvoke(player, self.name, nil, "#n_suijie_ask:" .. data.from) then
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local from = room:getPlayerById(data.from)
+    from:drawCards(1, self.name)
+    local a, b = player:getHandcardNum(), from:getHandcardNum()
+    if a < b  then
+      player:drawCards(b - a, self.name)
+    end
+  end,
+}
+n_awei:addSkill(n_suijie)
+local n_jujie = fk.CreateTriggerSkill{
+  name = "n_jujie",
+  anim_type = "defensive",
+  events = {fk.TargetConfirmed, fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    if not (target == player and player:hasSkill(self.name)) then return end
+    if event == fk.TargetConfirmed then
+      return data.from ~= player.id and data.card.is_damage_card
+    else
+      local e = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+      return (e.n_jujie_list or {})[player.id] ~= nil and data.from and
+        data.from:getHandcardNum() > player:getHandcardNum()
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.TargetConfirmed then
+      local ids = room:askForDiscard(player, 1, 1, true, self.name, true,
+        ".", "#n_jujie_ask::" .. data.from .. ":" .. data.card.name, true)
+
+      if #ids > 0 then
+        self.cost_data = ids[1]
+        return true
+      end
+    else
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.TargetConfirmed then
+      room:throwCard(self.cost_data, self.name, player, player)
+      local e = room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+      e.n_jujie_list = e.n_jujie_list or {}
+      e.n_jujie_list[player.id] = true
+    else
+      local from = data.from
+      local a, b = player:getHandcardNum(), from:getHandcardNum()
+      if a < b then
+        room:askForDiscard(from, b - a, b - a, false, self.name, false)
+      end
+    end
+  end,
+}
+n_awei:addSkill(n_jujie)
+Fk:loadTranslationTable{
+  ["n_awei"] = "阿玮",
+  ["#n_awei"] = "在杰难逃",
+  ["designer:n_awei"] = "Notify",
+  ["illustrator:n_awei"] = "网络",
+  ["~n_awei"] = "透，死了啦，都是你害的啦，拜托！",
+  ["n_suijie"] = "随杰",
+  [":n_suijie"] = "当你成为其他角色使用【桃】、【酒】、【五谷丰登】、【桃园结义】的目标后，你可以令其摸一张牌，然后你将手牌数摸至与其一致。",
+  ["#n_suijie_ask"] = "你可以令 %src 摸一张牌，然后你将手牌摸至与其相等",
+  ["$n_suijie1"] = "杰哥，那我跟我朋友今天就去住你家哦。",
+  ["$n_suijie2"] = "谢谢杰哥~",
+  ["n_jujie"] = "拒杰",
+  ["#n_jujie_ask"] = "你可以弃置一张牌，之后你受到 %arg 的伤害后 %dest 须将手牌弃置至与你相等",
+  [":n_jujie"] = "当你成为其他角色使用伤害类卡牌的目标后，你可以弃置一张牌，之后若此牌对你造成了伤害，伤害来源须将手牌数弃置至与你一致。",
+  ["$n_jujie"] = "不要啦杰哥！你干嘛！",
 }
 
 local extension_card = Package("brainhole_cards", Package.CardPack)
