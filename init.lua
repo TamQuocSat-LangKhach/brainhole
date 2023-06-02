@@ -597,8 +597,8 @@ Fk:loadTranslationTable{
 }
 
 local n_miaosha = General(extension, "n_miaosha", "wei", 4)
-local n_shunsha = fk.CreateTriggerSkill{
-  name = "n_shunsha",
+local n_cizhi = fk.CreateTriggerSkill{
+  name = "n_cizhi",
   anim_type = "offensive",
   events = {fk.Damage},
   can_trigger = function(self, event, target, player, data)
@@ -614,14 +614,12 @@ local n_shunsha = fk.CreateTriggerSkill{
     }
   end,
 }
-n_miaosha:addSkill(n_shunsha)
+n_miaosha:addSkill(n_cizhi)
 Fk:loadTranslationTable{
   ["n_miaosha"] = "郭修",
-  ["n_shunsha"] = "暗刺",
-  [":n_shunsha"] = "当你造成伤害后，若你的体力值不大于伤害目标的体力值，" ..
+  ["n_cizhi"] = "刺智",
+  [":n_cizhi"] = "当你造成伤害后，若你的体力值不大于伤害目标的体力值，" ..
     "则你可以对伤害目标造成一点伤害。",
-
-
 }
 
 local extension_card = Package("brainhole_cards", Package.CardPack)
