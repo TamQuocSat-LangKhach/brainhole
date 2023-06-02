@@ -562,7 +562,7 @@ local n_mingzhe = fk.CreateTriggerSkill{
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self.name) and player.phase == Player.NotActive and
-      player:usedSkillTimes(self.name, Player.HistoryPhase) < 2 then
+      player:usedSkillTimes(self.name, Player.HistoryPhase) < 999 then
       self.trigger_times = 0
       for _, move in ipairs(data) do
         if move.from == player.id and (move.moveReason == fk.ReasonUse or move.moveReason == fk.ReasonResonpse or move.moveReason == fk.ReasonDiscard) then
@@ -599,7 +599,7 @@ Fk:loadTranslationTable{
   "② 若你不是唯一目标，你可以将颜色相同的一张手牌当做此牌对那名唯一目标使用。（无视距离）",
   ["@n_fudu"] = "复读：你现在可以将一张手牌当做 %arg 对 %dest 使用",
   ["n_mingzhe"] = "明哲",
-  [":n_mingzhe"] = "每回合限两次，当你于回合外使用、打出或因弃置而失去一张红色牌时，你可以摸一张牌。",
+  [":n_mingzhe"] = "当你于回合外使用、打出或因弃置而失去一张红色牌时，你可以摸一张牌。",
 }
 
 local n_miaosha = General(extension, "n_miaosha", "wei", 4)
@@ -772,11 +772,11 @@ Fk:loadTranslationTable{
   ["~n_awei"] = "透，死了啦，都是你害的啦，拜托！",
   ["n_suijie"] = "随杰",
   [":n_suijie"] = "当你成为其他角色使用【桃】、【酒】、【五谷丰登】、【桃园结义】的目标后，你可以令其摸一张牌，然后你将手牌数摸至与其一致。",
-  ["#n_suijie_ask"] = "你可以令 %src 摸一张牌，然后你将手牌摸至与其相等",
+  ["#n_suijie_ask"] = "随杰：你可以令 %src 摸一张牌，然后你将手牌摸至与其相等",
   ["$n_suijie1"] = "杰哥，那我跟我朋友今天就去住你家哦。",
   ["$n_suijie2"] = "谢谢杰哥~",
   ["n_jujie"] = "拒杰",
-  ["#n_jujie_ask"] = "你可以弃置一张牌，之后你受到 %arg 的伤害后 %dest 须将手牌弃置至与你相等",
+  ["#n_jujie_ask"] = "拒杰：你可以弃置一张牌，之后你受到 %arg 的伤害后 %dest 须将手牌弃置至与你相等",
   [":n_jujie"] = "当你成为其他角色使用伤害类卡牌的目标后，你可以弃置一张牌，之后若此牌对你造成了伤害，伤害来源须将手牌数弃置至与你一致。",
   ["$n_jujie"] = "不要啦杰哥！你干嘛！",
 }
