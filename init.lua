@@ -98,11 +98,11 @@ Fk:loadTranslationTable{
   ["n_zy"] = "ＺＹ",
   ["n_juanlao"] = "奆佬",
   ["@n_juanlao"] = "奆佬",
-  [":n_juanlao"] = "阶段技。你可以视为使用了本回合你使用过的" ..
+  [":n_juanlao"] = "出牌阶段限一次，你可以视为使用了本回合你使用过的" ..
     "上一张非转化普通锦囊牌。",
   ["n_yegeng"] = "夜更",
   ["@n_yegeng"] = "夜更",
-  [":n_yegeng"] = "锁定技。结束阶段，若你本回合使用普通锦囊牌数量不小于3，" ..
+  [":n_yegeng"] = "锁定技，结束阶段，若你本回合使用普通锦囊牌数量不小于3，" ..
     "你进行一个额外的回合，否则你摸一张牌。",
 }
 
@@ -265,9 +265,9 @@ n_qunlingdao:addSkill(n_qunzhi)
 Fk:loadTranslationTable{
   ["n_qunlingdao"] = "群领导",
   ["n_lingxiu"] = "领袖",
-  [":n_lingxiu"] = "锁定技。你获得手牌后，若你的手牌数不为场上最多，你摸一张牌。",
+  [":n_lingxiu"] = "锁定技，你获得手牌后，若你的手牌数不为场上最多，你摸一张牌。",
   ["n_qunzhi"] = "群智",
-  [":n_qunzhi"] = "阶段技。若你的体力值不超过你的手牌数，" ..
+  [":n_qunzhi"] = "出牌阶段限一次，若你的体力值不超过你的手牌数，" ..
     "你可以将一半的手牌当一张普通锦囊牌（无懈除外）使用。" ..
     "（每种限用一次，你因本技能使用过全部普通锦囊牌后技能状态刷新。）",
   ["~n_qunlingdao"] = "我还会继续看群的...",
@@ -854,6 +854,93 @@ Fk:loadTranslationTable{
   ["#n_jujie_ask"] = "拒杰：你可以弃置一张牌，之后你受到 %arg 的伤害后 %dest 须将手牌弃置至与你相等",
   [":n_jujie"] = "当你成为其他角色使用伤害类卡牌的目标后，你可以弃置一张牌，之后若此牌对你造成了伤害，伤害来源须将手牌数弃置至与你一致。",
   ["$n_jujie"] = "不要啦杰哥！你干嘛！",
+}
+
+local notify = General(extension, "n_notify", "qun", 3)
+local bianchengTrig = fk.CreateTriggerSkill{
+  name = "#n_biancheng_trig",
+  refresh_events = {fk.AfterCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    if not player:hasSkill("n_biancheng") then return end
+    for _, move in ipairs(data) do
+      if move.toArea == Card.DrawPile then
+        return true
+      end
+      for _, info in ipairs(move.moveInfo) do
+        if info.fromArea == Card.DrawPile then
+          return true
+        end
+      end
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    room:setPlayerMark(player, "n_biancheng", room.draw_pile[1])
+  end,
+}
+local biancheng = fk.CreateViewAsSkill{
+  name = "n_biancheng",
+  card_num = 0,
+  -- anim_type = "drawcard",
+  pattern = ".",
+  interaction = function(self)
+    local card = Fk:getCardById(Self:getMark(self.name))
+    return UI.ComboBox {
+      choices = { Fk:translate(card.name) .. '['
+        .. Fk:translate("log_" .. card:getSuitString())
+        .. card.number .. ']'
+      }
+    }
+  end,
+  card_filter = function()
+    return false
+  end,
+  view_as = function(self, cards)
+    local card = Fk:getCardById(Self:getMark(self.name))
+    if card.suit == Card.Spade then return nil end
+    card = Fk:cloneCard(card.name)
+    card.skillName = self.name
+    return card
+  end,
+  before_use = function(self, player, use)
+    use.card = Fk:getCardById(player.room.draw_pile[1])
+  end,
+  enabled_at_play = function(self, player)
+    local card = Fk:getCardById(player:getMark(self.name))
+    return card.suit ~= Card.Spade
+  end,
+  enabled_at_response = function(self, player)
+    local card = Fk:getCardById(player:getMark(self.name))
+    -- 服务器端判断无懈的时候这个pattern是nil。。
+    local pat = Fk.currentResponsePattern or "nullification"
+    return card.suit ~= Card.Spade and Exppattern:Parse(pat):matchExp(card.name)
+  end,
+}
+biancheng:addRelatedSkill(bianchengTrig)
+notify:addSkill(biancheng)
+local tiaoshi = fk.CreateActiveSkill{
+  name = "n_tiaoshi",
+  anim_type = "drawcard",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name) == 0
+  end,
+  target_num = 0,
+  card_num = 0,
+  card_filter = function()
+    return false
+  end,
+  on_use = function(self, room, effect)
+    local from = room:getPlayerById(effect.from)
+    from:drawCards(1, self.name)
+  end
+}
+notify:addSkill(tiaoshi)
+Fk:loadTranslationTable{
+  ["n_notify"] = "Notify_",
+  ["n_biancheng"] = "编程",
+  [":n_biancheng"] = "你可以使用或打出牌堆顶的非黑桃牌。",
+  ["n_tiaoshi"] = "调试",
+  [":n_tiaoshi"] = "出牌阶段限一次，你可以摸一张牌。",
 }
 
 local extension_card = Package("brainhole_cards", Package.CardPack)
