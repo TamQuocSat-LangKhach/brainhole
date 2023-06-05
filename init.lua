@@ -674,6 +674,81 @@ Fk:loadTranslationTable{
     "若你没有同名的手牌，则你可以获得之。每种牌名限获得一次。",
 }
 
+local jiege = General(extension, "n_jiege", "qun", 4)
+local yaoyin = fk.CreateActiveSkill{
+  name = "n_yaoyin",
+  anim_type = "control",
+  card_num = 1,
+  target_num = 1,
+  frequency = Skill.Limited,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:currentRoom():getCardArea(to_select) ~= Card.PlayerEquip
+  end,
+  target_filter = function(self, to_select, selected)
+    -- TODO: 客户端getNextAlive
+
+    local t = Fk:currentRoom():getPlayerById(to_select)
+    local ret = t.next
+    while ret.dead do
+      ret = ret.next
+    end
+
+    return #selected == 0 and to_select ~= Self.id and ret ~= Self
+  end,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local card = effect.cards[1]
+
+    room:loseHp(player, 1, self.name)
+    room:obtainCard(target.id, card, false, fk.ReasonGive)
+
+    local prev = player:getNextAlive()
+    while prev:getNextAlive() ~= player do
+      prev = prev:getNextAlive()
+    end
+
+    room:swapSeat(prev, target)
+
+    local card = Fk:cloneCard("analeptic")
+    card.skillName = self.name
+    local use = {}
+    use.from = player.id
+    use.tos = { { player.id }, { target.id } }
+    use.card = card
+    use.extraUse = true
+    room:useCard(use)
+  end,
+}
+jiege:addSkill(yaoyin)
+local kangkang = fk.CreateTriggerSkill{
+  name = "n_kangkang",
+  anim_type = "offensive",
+  events = {fk.DamageCaused},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and
+      (data.to == player:getNextAlive() or data.to:getNextAlive() == player) and
+      player:usedSkillTimes(self.name, Player.HistoryTurn) < 2
+  end,
+  on_use = function(self, event, _, player, data)
+    local room = player.room
+    local target = data.to
+
+    local cids = target.player_cards[Player.Hand]
+    room:fillAG(player, cids)
+
+    local id = room:askForAG(player, cids, false, self.name)
+    room:closeAG(player)
+
+    if not id then return false end
+    room:obtainCard(player, id, false)
+  end,
+}
+jiege:addSkill(kangkang)
+
 Fk:loadTranslationTable{
   ["n_jiege"] = "杰哥",
   ["#n_jiege"] = "转大人指导",
