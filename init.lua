@@ -562,7 +562,7 @@ local n_mingzhe = fk.CreateTriggerSkill{
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self.name) and player.phase == Player.NotActive and
-      player:usedSkillTimes(self.name, Player.HistoryTurn) < 3 then
+      player:usedSkillTimes(self.name, Player.HistoryTurn) < 2 then
       self.trigger_times = 0
       for _, move in ipairs(data) do
         if move.from == player.id and (move.moveReason == fk.ReasonUse or move.moveReason == fk.ReasonResonpse or move.moveReason == fk.ReasonDiscard) then
@@ -599,7 +599,7 @@ Fk:loadTranslationTable{
   "② 若你不是唯一目标，你可以将颜色相同的一张手牌当做此牌对那名唯一目标使用。（无视距离）",
   ["@n_fudu"] = "复读：你现在可以将一张手牌当做 %arg 对 %dest 使用",
   ["n_mingzhe"] = "明哲",
-  [":n_mingzhe"] = "每回合限三次，当你于回合外使用、打出或因弃置而失去一张红色牌时，你可以摸一张牌。",
+  [":n_mingzhe"] = "每回合限两次，当你于回合外使用、打出或因弃置而失去一张红色牌时，你可以摸一张牌。",
 }
 
 local n_miaosha = General(extension, "n_miaosha", "wei", 4)
@@ -897,7 +897,7 @@ local biancheng = fk.CreateViewAsSkill{
   end,
   view_as = function(self, cards)
     local card = Fk:getCardById(Self:getMark(self.name))
-    -- if card.suit == Card.Spade then return nil end
+    if card.suit == Card.Spade then return nil end
     card = Fk:cloneCard(card.name)
     card.skillName = self.name
     return card
@@ -913,7 +913,7 @@ local biancheng = fk.CreateViewAsSkill{
     local card = Fk:getCardById(player:getMark(self.name))
     -- 服务器端判断无懈的时候这个pattern是nil。。
     local pat = Fk.currentResponsePattern or "nullification"
-    return -- card.suit ~= Card.Spade and
+    return card.suit ~= Card.Spade and
       Exppattern:Parse(pat):matchExp(card.name)
   end,
 }
@@ -939,7 +939,7 @@ notify:addSkill(tiaoshi)
 Fk:loadTranslationTable{
   ["n_notify"] = "Notify_",
   ["n_biancheng"] = "编程",
-  [":n_biancheng"] = "你可以使用或打出牌堆顶的牌。",
+  [":n_biancheng"] = "你可以使用或打出牌堆顶的非黑桃牌。",
   ["n_tiaoshi"] = "调试",
   [":n_tiaoshi"] = "出牌阶段限一次，你可以摸一张牌。",
 }
