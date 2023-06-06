@@ -897,7 +897,7 @@ local biancheng = fk.CreateViewAsSkill{
   end,
   view_as = function(self, cards)
     local card = Fk:getCardById(Self:getMark(self.name))
-    if card.suit == Card.Spade then return nil end
+    -- if card.suit == Card.Spade then return nil end
     card = Fk:cloneCard(card.name)
     card.skillName = self.name
     return card
@@ -905,15 +905,16 @@ local biancheng = fk.CreateViewAsSkill{
   before_use = function(self, player, use)
     use.card = Fk:getCardById(player.room.draw_pile[1])
   end,
-  enabled_at_play = function(self, player)
-    local card = Fk:getCardById(player:getMark(self.name))
-    return card.suit ~= Card.Spade
-  end,
+  -- enabled_at_play = function(self, player)
+  --   local card = Fk:getCardById(player:getMark(self.name))
+  --   return card.suit ~= Card.Spade
+  -- end,
   enabled_at_response = function(self, player)
     local card = Fk:getCardById(player:getMark(self.name))
     -- 服务器端判断无懈的时候这个pattern是nil。。
     local pat = Fk.currentResponsePattern or "nullification"
-    return card.suit ~= Card.Spade and Exppattern:Parse(pat):matchExp(card.name)
+    return -- card.suit ~= Card.Spade and
+      Exppattern:Parse(pat):matchExp(card.name)
   end,
 }
 biancheng:addRelatedSkill(bianchengTrig)
@@ -938,7 +939,7 @@ notify:addSkill(tiaoshi)
 Fk:loadTranslationTable{
   ["n_notify"] = "Notify_",
   ["n_biancheng"] = "编程",
-  [":n_biancheng"] = "你可以使用或打出牌堆顶的非黑桃牌。",
+  [":n_biancheng"] = "你可以使用或打出牌堆顶的牌。",
   ["n_tiaoshi"] = "调试",
   [":n_tiaoshi"] = "出牌阶段限一次，你可以摸一张牌。",
 }
