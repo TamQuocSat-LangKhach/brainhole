@@ -980,6 +980,7 @@ local brick = fk.CreateBasicCard{
   suit = Card.Heart,
   is_damage_card = true,
   skill = brickSkill,
+  special_skills = { "recast" },
 }
 extension_card:addCards{ brick }
 
