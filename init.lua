@@ -624,8 +624,8 @@ n_miaosha:addSkill(n_cizhi)
 Fk:loadTranslationTable{
   ["n_miaosha"] = "郭修",
   ["n_cizhi"] = "刺智",
-  [":n_cizhi"] = "当你造成伤害后，若你的体力值不大于伤害目标的体力值，" ..
-    "则你可以对伤害目标造成一点伤害。",
+  [":n_cizhi"] = "当你对一名角色造成伤害后，若你的体力值不大于其，" ..
+    "则你可以对其造成一点伤害。",
 }
 
 local n_daotuwang = General(extension, "n_daotuwang", "qun", 3)
