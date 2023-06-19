@@ -922,16 +922,25 @@ notify:addSkill(biancheng)
 local tiaoshi = fk.CreateActiveSkill{
   name = "n_tiaoshi",
   anim_type = "drawcard",
-  can_use = function(self, player)
-    return player:usedSkillTimes(self.name) == 0
-  end,
+  -- can_use = function(self, player)
+  --   return player:usedSkillTimes(self.name) == 0
+  -- end,
   target_num = 0,
-  card_num = 0,
-  card_filter = function()
-    return false
+  prompt = function(self)
+    return "#n_tiaoshi:::" .. Self:usedSkillTimes(self.name)
+  end,
+  card_num = function(self)
+    return Self:usedSkillTimes(self.name)
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected < Self:usedSkillTimes(self.name) and
+      not Self:prohibitDiscard(Fk:getCardById(to_select))
   end,
   on_use = function(self, room, effect)
     local from = room:getPlayerById(effect.from)
+    if #effect.cards > 0 then
+      room:throwCard(effect.cards, self.name, from)
+    end
     from:drawCards(1, self.name)
   end
 }
@@ -941,7 +950,8 @@ Fk:loadTranslationTable{
   ["n_biancheng"] = "编程",
   [":n_biancheng"] = "你可以使用或打出牌堆顶的非黑桃牌。",
   ["n_tiaoshi"] = "调试",
-  [":n_tiaoshi"] = "出牌阶段限一次，你可以摸一张牌。",
+  [":n_tiaoshi"] = "出牌阶段，你可以弃置X张牌并摸一张牌。（X为本阶段发动过该技能的次数）",
+  ["#n_tiaoshi"] = "调试：弃置 %arg 张牌，然后摸 1 张牌",
 }
 
 local extension_card = Package("brainhole_cards", Package.CardPack)
