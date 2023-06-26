@@ -106,15 +106,92 @@ Fk:loadTranslationTable{
     "你进行一个额外的回合，否则你摸一张牌。",
 }
 
+local n_wch = General(extension, "n_wch", "qun", 3)
+local n_didiao = fk.CreateTriggerSkill{
+  name = "n_didiao",
+  anim_type = "drawcard",
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and data.card.type == Card.TypeTrick and
+      not player:isNude()
+  end,
+  on_cost = function(self, event, target, player, data)
+    local c = player.room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#n_didiao-discard", true)
+    if c[1] then
+      self.cost_data = c[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:throwCard(self.cost_data, self.name, player, player)
+    room:addPlayerMark(player, "@n_jiao", 1)
+  end,
+}
+n_wch:addSkill(n_didiao)
+local n_shenjiao_buyi = fk.CreateTriggerSkill{
+  name = "#n_shenjiao",
+  mute = true,
+  events = {fk.EnterDying},
+  can_trigger = function(self, event, target, player, data)
+    return player ~= target and player:hasSkill("n_shenjiao") and player:getMark("@n_jiao") > 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, "n_shenjiao", data, "#n_shenjiao-invoke::"..target.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:broadcastSkillInvoke("n_shenjiao")
+    room:notifySkillInvoked(player, "n_shenjiao", "support")
+    room:removePlayerMark(player, "@n_jiao", 1)
+    room:doIndicate(player.id, { target.id })
+    room:recover{
+      who = target,
+      num = 1,
+      recoverBy = player,
+      skillName = self.name
+    }
+  end,
+}
+local n_shenjiao = fk.CreateActiveSkill{
+  name = "n_shenjiao",
+  anim_type = "drawcard",
+  can_use = function (self, player, card)
+    return player:getMark("@n_jiao") > 0
+  end,
+  card_num = 0,
+  target_num = 0,
+  card_filter = function() return false end,
+  on_use = function (self, room, effect)
+    local from = room:getPlayerById(effect.from)
+    room:removePlayerMark(from, "@n_jiao", 1)
+    from:drawCards(2, self.name)
+  end
+}
+n_shenjiao:addRelatedSkill(n_shenjiao_buyi)
+n_wch:addSkill(n_shenjiao)
+Fk:loadTranslationTable{
+  ["n_wch"] = "饺神",
+  ["designer:n_wch"] = "Notify",
+  ["illustrator:n_wch"] = "来自网络",
+  ["n_didiao"] = "低调",
+  [":n_didiao"] = "每当你使用锦囊牌后，你可以弃置一张牌，获得一枚“饺”标记。",
+  ["#n_didiao-discard"] = "低调：你可以弃置一张牌，获得一枚“饺”",
+  ["@n_jiao"] = "饺",
+  ["n_shenjiao"] = "神饺",
+  ["#n_shenjiao-invoke"] = "神饺：你可以弃置一枚“饺”来为 %dest 回复一点体力",
+  [":n_shenjiao"] = "出牌阶段，你可以弃置一枚“饺”标记并摸两张牌；一名其他角色进入濒死状态时，你可以弃置一枚“饺”标记，令其回复一点体力。",
+}
+
 local n_mabaoguo = General(extension, "n_mabaoguo", "qun", 4)
 local n_hunyuan = fk.CreateTriggerSkill{
   name = "n_hunyuan",
   anim_type = "offensive",
   mute = true,
-  events = {fk.DamageCaused, fk.Damage},
+  events = {fk.DamageCaused, fk.DamageInflicted, fk.Damage, fk.Damaged},
   can_trigger = function(self, event, target, player, data)
     if not (target == player and player:hasSkill(self.name)) then return end
-    if event == fk.Damage then
+    if event == fk.Damage or event == fk.Damaged then
       return player:getMark("n_hydmg1") == player:getMark("n_hydmg2") and
         player:getMark("n_hydmg2") == player:getMark("n_hydmg3")
     else
@@ -123,7 +200,7 @@ local n_hunyuan = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.DamageCaused then
+    if not (event == fk.Damage or event == fk.Damaged) then
       local clist = {"n_toNormal", "n_toThunder", "n_toFire", "cancel"}
       local clist2 = {"n_toNormal", "n_toThunder", "n_toFire", "cancel"}
       table.remove(clist, data.damageType)
@@ -148,11 +225,12 @@ local n_hunyuan = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:notifySkillInvoked(player, self.name)
-    if event == fk.DamageCaused then
+    if not (event == fk.Damage or event == fk.Damaged) then
       room:broadcastSkillInvoke(self.name, self.cost_data)
       data.damageType = self.cost_data
     else
       room:broadcastSkillInvoke(self.name, table.random{4, 5})
+      player:drawCards(1, self.name)
       room:damage{
         from = player,
         to = room:getPlayerById(self.cost_data),
@@ -161,7 +239,7 @@ local n_hunyuan = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.Damage},
+  refresh_events = {fk.Damage, fk.Damaged},
   can_refresh = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name)
   end,
@@ -176,14 +254,56 @@ local n_hunyuan = fk.CreateTriggerSkill{
   end,
 }
 n_mabaoguo:addSkill(n_hunyuan)
+local n_lianbian = fk.CreateActiveSkill{
+  name = "n_lianbian",
+  anim_type = "offensive",
+  card_num = 0,
+  target_num = 0,
+  frequency = Skill.Limited,
+  mute = true,
+  card_filter = function() return false end,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local curtime = os.getms() / 1000
+    room:broadcastSkillInvoke(self.name, 1)
+    room:notifySkillInvoked(player, self.name)
+    room:throwCard(player:getCardIds(Player.Hand), self.name, player, player)
+
+    room:delay(2700 - (os.getms() / 1000 - curtime))
+
+    for i = 1, 5 do
+      room:broadcastSkillInvoke(self.name, i + 1)
+      if not player:isAlive() then return end
+      local judge = {
+        who = player,
+        reason = self.name,
+        pattern = ".|.|spade",
+      }
+      room:judge(judge)
+      if judge.card.suit == Card.Spade then
+        local targets = table.map(room.alive_players, Util.IdMapper)
+        local tos = room:askForChoosePlayers(player, targets, 1, 1, "#n_lianbian-damage", self.name, false)
+        room:damage {
+          from = player, to = room:getPlayerById(tos[1]),
+          damage = 1, skillName = self.name, damageType = fk.ThunderDamage,
+        }
+      end
+    end
+    room:broadcastSkillInvoke(self.name, 7)
+  end,
+}
+n_mabaoguo:addSkill(n_lianbian)
 Fk:loadTranslationTable{
   ["n_mabaoguo"] = "马保国",
   ["n_hunyuan"] = "浑元",
   ["@n_hunyuan"] = "浑元",
-  [":n_hunyuan"] = "你造成伤害时，可改变伤害属性。" ..
-    "你造成伤害后，记录你造成的这种属性伤害的伤害值，" ..
-    "然后若你造成过的普、火、雷这三种属性伤害值都相等，" ..
-    "你可以对一名角色造成一点伤害。",
+  [":n_hunyuan"] = "你造成或受到伤害时，可改变伤害属性。" ..
+    "你造成或受到伤害后，记录你造成或受到的这种属性伤害的伤害值，" ..
+    "然后若记录的普、火、雷这三种属性伤害值都相等，" ..
+    "你可以摸一张牌并对一名角色造成一点伤害。",
   ["#n_hy-ask"] = "浑元：你可以对一名角色造成一点伤害",
   ["n_toFire"] = "转换成火属性伤害",
   ["n_toThunder"] = "转换成雷属性伤害",
@@ -193,6 +313,16 @@ Fk:loadTranslationTable{
   ["$n_hunyuan3"] = "一个左刺拳。",
   ["$n_hunyuan4"] = "三维立体浑元劲，打出松果糖豆闪电鞭",
   ["$n_hunyuan5"] = "耗子尾汁。",
+  ["n_lianbian"] = "连鞭",
+  [":n_lianbian"] = "限定技，出牌阶段，你可以弃置所有手牌并连续进行五次判定，每当判定结果为♠时，你对一名角色造成一点雷电伤害。",
+  ["#n_lianbian-damage"] = "连鞭：对一名角色造成一点雷电伤害",
+  ["$n_lianbian1"] = "下面，我打一个连五鞭啊。",
+  ["$n_lianbian2"] = "一鞭。",
+  ["$n_lianbian3"] = "两鞭。",
+  ["$n_lianbian4"] = "三鞭。",
+  ["$n_lianbian5"] = "四鞭。",
+  ["$n_lianbian6"] = "五鞭。",
+  ["$n_lianbian7"] = "打了五鞭。这五鞭要连续打",
   ["~n_mabaoguo"] = "这两个年轻人不讲武德，来，骗！来，偷袭！我六十九岁的老同志，这好吗这不好。",
 }
 
@@ -955,6 +1085,7 @@ Fk:loadTranslationTable{
 }
 
 local n_jiequan = General(extension, "n_jiequan", "wu", 4)
+n_jiequan.hidden = true
 local n_huiwan = fk.CreateActiveSkill{
   name = "n_huiwan",
   anim_type = "drawcard",
