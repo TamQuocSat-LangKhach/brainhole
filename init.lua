@@ -267,12 +267,11 @@ local n_lianbian = fk.CreateActiveSkill{
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    local curtime = os.getms() / 1000
     room:broadcastSkillInvoke(self.name, 1)
     room:notifySkillInvoked(player, self.name)
-    room:throwCard(player:getCardIds(Player.Hand), self.name, player, player)
+    room:delay(2700)
 
-    room:delay(2700 - (os.getms() / 1000 - curtime))
+    room:throwCard(player:getCardIds(Player.Hand), self.name, player, player)
 
     for i = 1, 5 do
       room:broadcastSkillInvoke(self.name, i + 1)
