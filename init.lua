@@ -833,6 +833,9 @@ local yaoyin = fk.CreateActiveSkill{
     local card = effect.cards[1]
 
     room:loseHp(player, 1, self.name)
+
+    if player.dead then return end
+
     room:obtainCard(target.id, card, false, fk.ReasonGive)
 
     local prev = player:getNextAlive()
