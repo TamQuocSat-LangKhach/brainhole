@@ -1198,9 +1198,60 @@ local n_huiwan = fk.CreateActiveSkill{
         table.insert(room.draw_pile, 1, spade)
       end
     end
+
+    if from:hasSkill("n_jiequanisbest") then
+      if room:askForSkillInvoke(from, "n_jiequanisbest") then
+        room:notifySkillInvoked(from, "n_jiequanisbest", "special")
+        room:delay(2000)
+        room:gameOver(from.role)
+      end
+    end
   end
 }
 n_jiequan:addSkill(n_huiwan)
+--[[
+local n_dayou = fk.CreateActiveSkill{
+  name = "n_dayou",
+  anim_type = "control",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function(self, card)
+    return false
+  end,
+  card_num = 0,
+  target_num = 0,
+  on_use = function(self, room, effect)
+    local from = room:getPlayerById(effect.from)
+    local c = Fk:cloneCard'slash'
+    c:addSubcards(room.discard_pile)
+    room:obtainCard(from, c)
+  end,
+}
+--n_jiequan:addSkill(n_dayou)
+local n_duibao = fk.CreateTriggerSkill{
+  name = "n_duibao",
+  anim_type = "defensive",
+  events = {fk.TargetConfirming},
+  can_trigger = function(self, event, target, player, data)
+    local ret = target == player and player:hasSkill(self.name) and
+      data.card.trueName == "slash"
+    return ret
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = data.from
+    room:doIndicate(player.id, { to })
+    TargetGroup:removeTarget(data.targetGroup, player.id)
+    room:damage{ from = player, to = room:getPlayerById(to), damage = 1, }
+  end,
+}
+n_jiequan:addSkill(n_duibao)
+--]]
+local n_jiequanisbest = fk.CreateTriggerSkill{
+  name = "n_jiequanisbest",
+}
+n_jiequan:addSkill(n_jiequanisbest)
 Fk:loadTranslationTable{
   ["n_jiequan"] = "界权",
   ["n_huiwan"] = "会玩",
@@ -1213,6 +1264,13 @@ Fk:loadTranslationTable{
   ["n_huiwan_delay"] = "将一兵一乐置顶，摸牌后再将一张黑桃牌置顶",
   ["n_huiwan_equips"] = "小会玩龟缩防守，简单置顶装备栏缺失的装备",
   ["n_huiwan_peach"] = "状态有点差，将最多等同于损失体力值的桃子置顶",
+
+  ["n_dayou"] = "大优",
+  [":n_dayou"] = "出牌阶段限一次，你可以将弃牌堆置入手中。若你以此法直接卡死，作者概不负责。",
+  ["n_duibao"] = "对爆",
+  [":n_duibao"] = "当你成为【杀】的目标后，你可以取消自己为目标，然后对使用者造成1点伤害。",
+  ["n_jiequanisbest"] = "信界权得永生",
+  [":n_jiequanisbest"] = "你发动“会玩”后，可以获胜。",
 
   ["$n_huiwan1"] = "不急，吾等必一击制敌。",
   ["$n_huiwan2"] = "纵横捭阖，自有制衡之道。",
