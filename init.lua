@@ -1355,6 +1355,10 @@ local n_dunshi_record = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local choices = {"n_dunshi1", "n_dunshi2", "n_dunshi3"}
+    local tech = {
+      "崩", "急", "典", "孝", "乐", "赢",
+                        "笑",       "营",
+    }
     for i = 1, 2, 1 do
       local choice = room:askForChoice(player, choices, self.name)
       table.removeOne(choices, choice)
@@ -1363,10 +1367,10 @@ local n_dunshi_record = fk.CreateTriggerSkill{
         for _, general in ipairs(Fk:getAllGenerals()) do
           for _, skill in ipairs(general.skills) do
             local str = Fk:translate(skill.name)
-            if table.find({"崩", "急", "典", "孝", "乐", "赢"}, function(s) return string.find(str, s) end) then
+            if table.find(tech, function(s) return string.find(str, s) end) then
               local name = skill.name
-              if not target:hasSkill("#n_yingma") and (target:hasSkill(skill) or string.find(name, "&")) then
-                name = "#n_yingma"
+              if not target:hasSkill("n_yingma") and (target:hasSkill(skill) or string.find(name, "&")) then
+                name = "n_yingma"
               end
               if not target:hasSkill(name, true) then
                 table.insertIfNeed(skills, name)
@@ -1418,8 +1422,8 @@ local n_dunshi_record = fk.CreateTriggerSkill{
 }
 
 local n_yingma = fk.CreateTriggerSkill{
-  name = "#n_yingma",
-  mute = true,
+  name = "n_yingma",
+  --mute = true,
   frequency = Skill.Compulsory,
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
@@ -1427,6 +1431,7 @@ local n_yingma = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
+    --[[
     if player:isWounded() then
       room:recover({
         who = player,
@@ -1435,6 +1440,7 @@ local n_yingma = fk.CreateTriggerSkill{
         skillName = self.name
       })
     end
+    ]]--
     if player.maxHp < 7 then
       room:changeMaxHp(player, 1)
     end
@@ -1443,11 +1449,12 @@ local n_yingma = fk.CreateTriggerSkill{
 Fk:addSkill(n_yingma)
 n_dunshi:addRelatedSkill(n_dunshi_record)
 guanning:addSkill(n_dunshi)
+guanning:addRelatedSkill("n_yingma")
 Fk:loadTranslationTable{
-  ["n_guanning"] = "谋管宁",
+  ["n_guanning"] = "菅宁",
   ["n_dunshi"] = "炖世",
-  [":n_dunshi"] = "每回合限一次，你可视为使用一张君子锦囊，然后当前回合角色本回合下次造成伤害时，你选择两项：<br>"..
-  "1.防止此伤害，选择1个“君子六艺”的技能令其获得；<br>"..
+  [":n_dunshi"] = "每回合限一次，你可视为使用一张君子锦囊（拆顺无借懈笑瞒），然后当前回合角色本回合下次造成伤害时，你选择两项：<br>"..
+  "1.防止此伤害，选择1个名字含有“典急孝乐崩赢”的同音字的技能令其获得；<br>"..
   "2.减1点体力上限并摸X张牌（X为你选择3的次数）；<br>"..
   "3.删除你本次视为使用的牌名。",
   ["#n_dunshi_record"] = "炖世",
@@ -1457,11 +1464,12 @@ Fk:loadTranslationTable{
   ["n_dunshi3"] = "删除你本次视为使用的牌名",
   ["#n_dunshi-chooseskill"] = "炖世：选择令%dest获得的技能",
 
-  ["#n_yingma"] = "赢麻",
-  [":#n_yingma"] = "这个神秘技能不会出现在你的技能框里，但是你赢麻了。",
+  ["n_yingma"] = "赢麻",
+  -- [":n_yingma"] = "这个神秘技能不会出现在你的技能框里，但是你赢麻了。",
+  [":n_yingma"] = "锁定技，准备阶段，若你体力上限小于7，加一点上限。",
 
   ["$n_dunshi1"] = "天下皆黑，于我独白。",
-  ["$n_dunshi2"] = "我不忿世，唯炖之而自伤。",
+  ["$n_dunshi2"] = "我不忿世，唯炖之而自觞。",
   ["~n_guanning"] = "近城远山，皆是人间。",
 }
 
