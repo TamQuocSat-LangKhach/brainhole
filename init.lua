@@ -1277,6 +1277,192 @@ Fk:loadTranslationTable{
   ["~n_jiequan"] = "父兄大计，权，实憾矣。",
 }
 
+
+local guanning = General(extension, "n_guanning", "qun", 3, 7)
+local n_dunshi_names = {"dismantlement", "snatch", "ex_nihilo", "collateral", "nullification", "daggar_in_smile", "underhanding"}
+local n_dunshi = fk.CreateViewAsSkill{
+  name = "n_dunshi",
+  pattern = table.concat(n_dunshi_names, ","),
+  interaction = function()
+    local all_names, names = n_dunshi_names, {}
+    local mark = Self:getMark("n_dunshi")
+    for _, name in ipairs(all_names) do
+      if type(mark) ~= "table" or not table.contains(mark, name) then
+        local to_use = Fk:cloneCard(name)
+        if ((Fk.currentResponsePattern == nil and to_use.skill:canUse(Self, to_use) and not Self:prohibitUse(to_use)) or
+            (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(to_use))) then
+          table.insertIfNeed(names, name)
+        end
+      end
+    end
+    if #names == 0 then return end
+    return UI.ComboBox {choices = names}
+  end,
+  card_filter = function()
+    return false
+  end,
+  view_as = function(self, cards)
+    if not self.interaction.data then return nil end
+    local card = Fk:cloneCard(self.interaction.data)
+    card.skillName = self.name
+    return card
+  end,
+  before_use = function(self, player, use)
+    player.room:setPlayerMark(player, "n_dunshi_name-turn", use.card.trueName)
+  end,
+  enabled_at_play = function(self, player)
+    if player:usedSkillTimes(self.name, Player.HistoryTurn) > 0 then return false end
+    local names = n_dunshi_names
+    local mark = Self:getMark("n_dunshi")
+    for _, name in ipairs(names) do
+      if type(mark) ~= "table" or not table.contains(mark, name) then
+        local to_use = Fk:cloneCard(name)
+        if to_use.skill:canUse(Self, to_use) and not Self:prohibitUse(to_use) then
+          return true
+        end
+      end
+    end
+  end,
+  enabled_at_response = function(self, player, response)
+    if player:usedSkillTimes(self.name, Player.HistoryTurn) > 0 then return false end
+    local names = n_dunshi_names
+    local mark = Self:getMark("n_dunshi")
+    for _, name in ipairs(names) do
+      if type(mark) ~= "table" or not table.contains(mark, name) then
+        local to_use = Fk:cloneCard(name)
+        if (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(to_use)) then
+          return true
+        end
+      end
+    end
+  end,
+}
+local n_dunshi_record = fk.CreateTriggerSkill{
+  name = "#n_dunshi_record",
+  anim_type = "special",
+  events = {fk.DamageCaused},
+  can_trigger = function(self, event, target, player, data)
+    if player:usedSkillTimes("n_dunshi", Player.HistoryTurn) > 0 and target and target.phase ~= Player.NotActive then
+      if target:getMark("n_dunshi-turn") == 0 then
+        player.room:addPlayerMark(target, "n_dunshi-turn", 1)
+        return true
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local choices = {"n_dunshi1", "n_dunshi2", "n_dunshi3"}
+    for i = 1, 2, 1 do
+      local choice = room:askForChoice(player, choices, self.name)
+      table.removeOne(choices, choice)
+      if choice == "n_dunshi1" then
+        local skills = {}
+        for _, general in ipairs(Fk:getAllGenerals()) do
+          for _, skill in ipairs(general.skills) do
+            local str = Fk:translate(skill.name)
+            if table.find({"崩", "急", "典", "孝", "乐", "赢"}, function(s) return string.find(str, s) end) then
+              local name = skill.name
+              if not target:hasSkill("#n_yingma") and (target:hasSkill(skill) or string.find(name, "&")) then
+                name = "#n_yingma"
+              end
+              table.insertIfNeed(skills, name)
+            end
+          end
+        end
+        if #skills > 0 then
+          local skill = room:askForChoice(player, table.random(skills, math.min(3, #skills)), self.name, "#n_dunshi-chooseskill::"..target.id, true)
+          room:handleAddLoseSkills(target, skill, nil, true, false)
+        end
+      elseif choice == "n_dunshi2" then
+        room:changeMaxHp(player, -1)
+        if not player.dead and player:getMark("n_dunshi") ~= 0 then
+          player:drawCards(#player:getMark("n_dunshi"), "n_dunshi")
+        end
+      elseif choice == "n_dunshi3" then
+        local mark = player:getMark("n_dunshi")
+        if mark == 0 then
+          mark = {}
+        end
+        table.insert(mark, player:getMark("n_dunshi_name-turn"))
+        room:setPlayerMark(player, "n_dunshi", mark)
+
+        local UImark = player:getMark("@$n_dunshi")
+        if type(UImark) == "table" then
+          table.removeOne(UImark, player:getMark("n_dunshi_name-turn"))
+          room:setPlayerMark(player, "@$n_dunshi", UImark)
+        end
+      end
+    end
+    if not table.contains(choices, "n_dunshi1") then
+      return true
+    end
+  end,
+
+  refresh_events = {fk.EventLoseSkill, fk.EventAcquireSkill},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and data == self
+  end,
+  on_refresh = function(self, event, target, player, data)
+    if event == fk.EventAcquireSkill then
+      player.room:setPlayerMark(player, "@$n_dunshi", n_dunshi_names)
+    else
+      player.room:setPlayerMark(player, n_dunshi.name, 0)
+      player.room:setPlayerMark(player, "@$n_dunshi", 0)
+    end
+  end,
+}
+
+local n_yingma = fk.CreateTriggerSkill{
+  name = "#n_yingma",
+  mute = true,
+  frequency = Skill.Compulsory,
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Start
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if player:isWounded() then
+      room:recover({
+        who = player,
+        num = 1,
+        recoverBy = player,
+        skillName = self.name
+      })
+    end
+    if player.maxHp < 7 then
+      room:changeMaxHp(player, 1)
+    end
+  end,
+}
+Fk:addSkill(n_yingma)
+n_dunshi:addRelatedSkill(n_dunshi_record)
+guanning:addSkill(n_dunshi)
+Fk:loadTranslationTable{
+  ["n_guanning"] = "谋管宁",
+  ["n_dunshi"] = "炖世",
+  [":n_dunshi"] = "每回合限一次，你可视为使用一张君子锦囊，然后当前回合角色本回合下次造成伤害时，你选择两项：<br>"..
+  "1.防止此伤害，选择1个“君子六艺”的技能令其获得；<br>"..
+  "2.减1点体力上限并摸X张牌（X为你选择3的次数）；<br>"..
+  "3.删除你本次视为使用的牌名。",
+  ["#n_dunshi_record"] = "炖世",
+  ["@$n_dunshi"] = "炖世",
+  ["n_dunshi1"] = "防止此伤害，选择1个“君子六艺”的技能令其获得",
+  ["n_dunshi2"] = "减1点体力上限并摸X张牌",
+  ["n_dunshi3"] = "删除你本次视为使用的牌名",
+  ["#n_dunshi-chooseskill"] = "炖世：选择令%dest获得的技能",
+
+  ["#n_yingma"] = "赢麻",
+  [":#n_yingma"] = "这个神秘技能不会出现在你的技能框里，但是你赢麻了。",
+
+  ["$n_dunshi1"] = "天下皆黑，于我独白。",
+  ["$n_dunshi2"] = "我不忿世，唯炖之而自伤。",
+  ["~n_guanning"] = "近城远山，皆是人间。",
+}
+
 local extension_card = Package("brainhole_cards", Package.CardPack)
 
 local brickSkill = fk.CreateActiveSkill{
