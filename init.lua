@@ -1368,7 +1368,9 @@ local n_dunshi_record = fk.CreateTriggerSkill{
               if not target:hasSkill("#n_yingma") and (target:hasSkill(skill) or string.find(name, "&")) then
                 name = "#n_yingma"
               end
-              table.insertIfNeed(skills, name)
+              if not target:hasSkill(name, true) then
+                table.insertIfNeed(skills, name)
+              end
             end
           end
         end
