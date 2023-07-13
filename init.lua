@@ -345,8 +345,13 @@ local n_lingxiu = fk.CreateTriggerSkill{
     end
   end,
   on_use = function(self, event, target, player, data)
-    player.room:delay(240)
-    player:drawCards(1)
+    -- player.room:delay(240)
+    local room = player.room
+    local goal = 0
+    for _, p in ipairs(room:getOtherPlayers(player)) do
+      goal = math.max(goal, p:getHandcardNum())
+    end
+    player:drawCards(goal - player:getHandcardNum())
   end,
 }
 n_qunlingdao:addSkill(n_lingxiu)
@@ -394,7 +399,7 @@ n_qunlingdao:addSkill(n_qunzhi)
 Fk:loadTranslationTable{
   ["n_qunlingdao"] = "群领导",
   ["n_lingxiu"] = "领袖",
-  [":n_lingxiu"] = "锁定技，你获得手牌后，若你的手牌数不为场上最多，你摸一张牌。",
+  [":n_lingxiu"] = "锁定技，你获得手牌后，将手牌摸至全场最多。",
   ["n_qunzhi"] = "群智",
   [":n_qunzhi"] = "出牌阶段限一次，若你的体力值不超过你的手牌数，" ..
     "你可以将一半的手牌当一张普通锦囊牌（无懈除外）使用。" ..
