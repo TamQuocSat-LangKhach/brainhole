@@ -1478,6 +1478,98 @@ Fk:loadTranslationTable{
   ["~n_guanning"] = "近城远山，皆是人间。",
 }
 
+local dj = General(extension, "n_dingzhen", "qun", 4)
+local yangwu = fk.CreateTriggerSkill{
+  name = "n_yangwu",
+  anim_type = "offensive",
+  frequency = Skill.Compulsory,
+  events = {fk.GamePrepared, fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) then
+      return event == fk.GamePrepared or
+        (target == player and player.phase == Player.Start)
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local treasure = player:getEquipment(Card.SubtypeTreasure)
+    if not treasure or Fk:getCardById(treasure).name ~= "n_relx_v" then
+      for _, id in ipairs(Fk:getAllCardIds()) do
+        if Fk:getCardById(id, true).name == "n_relx_v" then
+          local owner = room:getCardOwner(id)
+          room:obtainCard(player.id, id, false, fk.ReasonPrey)
+          if owner and owner ~= player then
+            room:damage { from = player, to = owner, damage = 1 }
+          end
+          room:useCard({
+            from = player.id,
+            tos = {{player.id}},
+            card = Fk:getCardById(id, true),
+          })
+
+          break
+        end
+      end
+    elseif Fk:getCardById(treasure).name == "n_relx_v" then
+      if not player:isKongcheng() then
+        local c = room:askForCard(player, 1, 999, false, self.name, true, ".|.|.|hand", "#n_yangwu-recast")
+        if #c > 0 then room:recastCard(c, player, self.name) end
+      end
+    end
+  end,
+}
+dj:addSkill(yangwu)
+local chunzhen = fk.CreateTriggerSkill{
+  name = "n_chunzhen",
+  frequency = Skill.Compulsory,
+  events = {fk.AfterCardTargetDeclared, fk.DamageInflicted},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    if not (target == player and player:hasSkill(self.name)) then
+      return false
+    end
+    if event == fk.AfterCardTargetDeclared then
+      return data.card:getSubtypeString() == "normal_trick" and data.tos and #data.tos > 1
+    else
+      return data.damageType == fk.ThunderDamage and player:getMark("@n_chunzhen") > 0
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+
+    if event == fk.AfterCardTargetDeclared then
+      room:broadcastSkillInvoke(self.name)
+      room:notifySkillInvoked(player, self.name, "special")
+      local tos = room:askForChoosePlayers(player, TargetGroup:getRealTargets(data.tos), 1, 1,
+        "#n_chunzhen-choose", self.name, false)
+      TargetGroup:removeTarget(data.tos, tos[1])
+      room:addPlayerMark(player, "@n_chunzhen", 1)
+    else
+      room:broadcastSkillInvoke(self.name)
+      room:notifySkillInvoked(player, self.name, "defensive")
+      room:removePlayerMark(player, "@n_chunzhen", 1)
+      data.damage = data.damage - 1
+    end
+  end,
+}
+dj:addSkill(chunzhen)
+Fk:loadTranslationTable{
+  ["n_dingzhen"] = "丁真",
+  ["n_yangwu"] = "扬雾",
+  [":n_yangwu"] = "锁定技，游戏开始时或准备阶段，若你未装备着" ..
+    "【悦刻五】，你获得并使用之（无论处于哪个区域，若你以此法从" ..
+    "其他玩家处获得了【悦刻五】，则对其造成1点伤害），否则你重铸任意张手牌。" ..
+    '<br /><font color="grey">注：【悦刻五】不会被销毁</font>',
+  ["#n_yangwu-ask"] = "扬雾: 令一名其他角色使用【悦刻五】",
+  ["#n_yangwu-recast"] = "扬雾: 重铸任意张手牌",
+  ["n_chunzhen"] = "纯真",
+  [":n_chunzhen"] = "锁定技，当你使用普通锦囊牌指定多个目标时，你" ..
+    "须为此牌减少一个目标，然后你获得1枚“纯真”标记；" ..
+    "当你受到雷属性伤害时，移去1枚“纯真”标记令此伤害-1。",
+  ["#n_chunzhen-choose"] = "纯真: 必须为此牌减少一个目标",
+  ["@n_chunzhen"] = "纯真",
+}
+
 local extension_card = Package("brainhole_cards", Package.CardPack)
 
 local brickSkill = fk.CreateActiveSkill{
@@ -1518,6 +1610,38 @@ local brick = fk.CreateBasicCard{
 }
 extension_card:addCards{ brick }
 
+local relxSkill = fk.CreateTriggerSkill{
+  name = "#n_relx_skill",
+  attached_equip = "n_relx_v",
+  frequency = Skill.Compulsory,
+  events = {fk.TargetSpecified},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and
+      data.card.type ~= Card.TypeEquip and
+      data.firstTarget and
+      not table.find(player:getCardIds(Player.Hand), function(cid)
+        local c = Fk:getCardById(cid)
+        return c.type == Card.TypeBasic and c.color == Card.Red
+      end) and
+      #AimGroup:getAllTargets(data.tos) > 0
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local x = #AimGroup:getAllTargets(data.tos)
+    room:notifySkillInvoked(player, "n_relx_v", "drawcard")
+    player:drawCards(x, self.name)
+    if x > 1 then room:damage { from = player, to = player, damage = 1, damageType = fk.ThunderDamage } end
+  end,
+}
+Fk:addSkill(relxSkill)
+local n_relx_v = fk.CreateTreasure{
+  name = "&n_relx_v",
+  suit = Card.Spade,
+  number = 12,
+  equip_skill = relxSkill,
+}
+extension_card:addCards{ n_relx_v }
+
 Fk:loadTranslationTable{
   ["brainhole_cards"] = "脑洞包卡牌",
   ["n_brick"] = "砖",
@@ -1525,6 +1649,12 @@ Fk:loadTranslationTable{
     "<b>时机</b>：出牌阶段<br />" ..
     "<b>目标</b>：攻击范围内的一名其他角色<br />" ..
     "<b>效果</b>：交给其此牌，对目标角色造成1点伤害。",
+
+  ["n_relx_v"] = "悦刻五",
+  [":n_relx_v"] = "装备牌·宝物<br />" ..
+    "<b>宝物技能</b>：锁定技，当你使用非装备牌指定目标后，若你没有" ..
+    "红色基本牌，你摸X张牌，然后若X>1，你对自己造成一点雷属性伤害（X为此牌指定的目标数）。<br />" ..
+    '<font color="grey"><small>都什么年代了还在抽传统焉？</small></font>',
 }
 
 return { extension, extension_card }
