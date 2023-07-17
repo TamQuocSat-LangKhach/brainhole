@@ -417,6 +417,55 @@ Fk:loadTranslationTable{
   ["~n_guanning"] = "近城远山，皆是人间。",
 }
 
+local xuchu = General(extension, "n_jz__xuchu", "wei", 4)
+--xuchu:addSkill("ex__luoyi")
+local nuzhan = fk.CreateTriggerSkill{
+  name = "n_jizhan",
+  events = {fk.AfterSkillEffect},
+  can_trigger = function(self, _, target, player, data)
+    return player:hasSkill(self.name) and player.phase == Player.NotActive and
+      target and target ~= player and
+      target:hasSkill(data) and data.visible and
+      target:getMark("@n_jizhan-turn") > 0 and
+      target:getMark("@n_jizhan-turn") % 6 == 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, data, "#n_jizhan-invoke::"..target.id)
+  end,
+  on_use = function(self, _, target, player, data)
+    local room = player.room
+    local slash = Fk:cloneCard 'slash'
+    slash.skillName = self.name
+    room:useCard {
+      from = player.id,
+      tos = { { target.id } },
+      card = slash,
+      additionalDamage = 1,
+      disresponsiveList = { target.id },
+    }
+  end,
+
+  refresh_events = {fk.AfterSkillEffect},
+  can_refresh = function(self, _, target, player, data)
+    return player:hasSkill(self.name) and player.phase == Player.NotActive and
+      target and target ~= player and
+      target:hasSkill(data) and data.visible
+  end,
+  on_refresh = function(self, _, target, _, _)
+    local room = target.room
+    room:addPlayerMark(target, "@n_jizhan-turn", 1)
+  end,
+}
+xuchu:addSkill(nuzhan)
+Fk:loadTranslationTable{
+  ["n_jz__xuchu"] = "急许褚",
+  ["n_jizhan"] = "急斩",
+  ["@n_jizhan-turn"] = "急斩",
+  ["#n_jizhan-invoke"] = "急斩: 现在你可以视为对 %dest 使用一张强中且加伤的【杀】",
+  [":n_jizhan"] = "你的回合外，当其他角色于一回合内每发动6次技能后，你可以视为对其使用了一张无视距离、不可响应且伤害值+1的【杀】。" ..
+    '<br /><font color="red">（注：因为暂缺界裸衣，故先伤害+1；由于机制尚不完善，请不要汇报本技能的bug）</font>',
+}
+
 local lvbu = General(extension, "n_jz__lvbu", "qun", 4)
 lvbu:addSkill("wushuang")
 local yixiaoTrig = fk.CreateTriggerSkill{
@@ -556,6 +605,5 @@ Fk:loadTranslationTable{
   ["$n_panshi2"] = "老贼！我与你势不两立！",
   ["~n_jz__lvbu"] = "刘备！奸贼！汝乃天下最无信义之人！",
 }
-
 
 return extension
