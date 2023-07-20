@@ -417,6 +417,245 @@ Fk:loadTranslationTable{
   ["~n_guanning"] = "近城远山，皆是人间。",
 }
 
+local caocao = General(extension, "n_jz__caocao", "wei", 4)
+local jianxiong = fk.CreateTriggerSkill{
+  name = "n_jianxiong",
+  anim_type = "masochism",
+  events = {fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) 
+  end,
+  on_cost = function(self, event, target, player, data)
+    local choices = {'n_jianxiong_draw'}
+    if data.card and target.room:getCardArea(data.card) == Card.Processing then
+      table.insert(choices, 'n_jianxiong_get')
+    end
+    table.insert(choices, 'Cancel')
+    local choice = player.room:askForChoice(player, choices, self.name)
+    if choice ~= "Cancel" then
+      self.cost_data = choice
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    if self.cost_data == "n_jianxiong_draw" then
+      player:drawCards(1, self.name)
+    elseif self.cost_data == "n_jianxiong_get" then
+      player.room:obtainCard(player.id, data.card, true, fk.ReasonJustMove)
+    end
+  end,
+}
+caocao:addSkill(jianxiong)
+local dianlun = fk.CreateTriggerSkill{
+  name = "n_dianlun",
+  frequency = Skill.Compulsory,
+  events = {fk.AfterCardsMove},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    if player.phase == Player.Draw or not player:hasSkill(self.name) then return end
+    if player:usedSkillTimes(self.name, Player.HistoryTurn) > 0 then return end
+    local room = player.room
+    for _, move in ipairs(data) do
+      if move.to == player.id and move.toArea == Card.PlayerHand then
+        for _, info in ipairs(move.moveInfo) do
+          local id = info.cardId
+          if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == player then
+            return true
+          end
+        end
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if player:isAllNude() then return end
+    room:askForDiscard(player, 1, 1, true, self.name, false, nil, "#n_dianlun_start")
+    local classic = {
+      'n_cc_lunying',
+      'n_cc_gexu',
+      'n_cc_duoqi',
+      'n_cc_sanxiao',
+      'n_cc_jiamei',
+      'n_cc_gongzhen',
+    }
+    if not table.find(room.alive_players, function(p) return p.gender == General.Female end) then
+      table.removeOne(classic, 'n_cc_gongzhen')
+      if not table.find(room.players, function(p) return p.dead == true end) then
+        table.removeOne(classic, 'n_cc_duoqi')
+      end
+    end
+
+    if player:getMark('n_cc_duoqi') ~= 0 then
+      table.removeOne(classic, 'n_cc_duoqi')
+    end
+
+    if #player:getCardIds('e') == 0 or not player:isWounded() then
+      table.removeOne(classic, 'n_cc_gexu')
+    end
+
+    room:notifySkillInvoked(player, self.name, 'special')
+
+    local choices = table.random(classic, 2)
+    local choice = room:askForChoice(player, choices, self.name, nil, true)
+
+    if choice == 'n_cc_lunying' then
+      local to = room:askForChoosePlayers(player,
+        table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1,
+        '#n_cc_lunying', self.name, false)[1]
+      local tgt = room:getPlayerById(to)
+
+      room:broadcastSkillInvoke(self.name, 1)
+      room:notifySkillInvoked(player, 'n_cc_lunying', 'special')
+
+      while true do
+        if player.dead then break end
+        if tgt.dead then break end
+
+        local judge = {
+          who = player,
+          reason = self.name,
+          pattern = ".|2~9|spade",
+        }
+        room:judge(judge)
+        local result = judge.card
+        if result.suit == Card.Spade and result.number >= 2 and result.number <= 9 then
+          room:damage{
+            to = judge.who,
+            damage = 3,
+            damageType = fk.ThunderDamage,
+            skillName = self.name,
+          }
+          break
+        end
+
+        if room:askForSkillInvoke(tgt, 'n_cc_lunying', nil, '#n_cc_lunying_cancel') then
+          room:damage { from = tgt, to = tgt, damage = 1, damageType = fk.ThunderDamage }
+          break
+        end
+
+        judge = {
+          who = tgt,
+          reason = self.name,
+          pattern = ".|2~9|spade",
+        }
+        room:judge(judge)
+        result = judge.card
+        if result.suit == Card.Spade and result.number >= 2 and result.number <= 9 then
+          room:damage{
+            to = judge.who,
+            damage = 3,
+            damageType = fk.ThunderDamage,
+            skillName = self.name,
+          }
+          break
+        end
+      end
+    elseif choice == 'n_cc_gexu' then
+      room:askForDiscard(player, 1, 1, true, self.name, false, '.|.|.|equip', '#n_cc_gexu')
+
+      room:broadcastSkillInvoke(self.name, 2)
+      room:notifySkillInvoked(player, 'n_cc_gexu', 'support')
+
+      room:recover { num = 1, skillName = self.name, who = player }
+    elseif choice == 'n_cc_duoqi' then
+      local female = table.filter(room:getOtherPlayers(player), function(p) return p.gender == General.Female end)
+      local to = room:askForChoosePlayers(player, table.map(female, Util.IdMapper), 1, 1, '#n_cc_duoqi',
+        self.name, false)[1]
+      local tgt = room:getPlayerById(to)
+
+      room:broadcastSkillInvoke(self.name, 3)
+      room:notifySkillInvoked(player, 'n_cc_duoqi', 'control')
+
+      local skills = table.map(Fk.generals[tgt.general].skills, Util.NameMapper)
+      local c = room:askForChoice(player, skills, self.name, "#n_cc_duoqi-choice::"..tgt.id, true)
+      if not player:hasSkill(c) then
+        room:handleAddLoseSkills(player, c, nil, true, true)
+        player:setMark('n_cc_duoqi', 1)
+      end
+    elseif choice == 'n_cc_sanxiao' then
+      local to = room:askForChoosePlayers(player,
+        table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1,
+        '#n_cc_sanxiao', self.name, false)[1]
+      local tgt = room:getPlayerById(to)
+
+      room:broadcastSkillInvoke(self.name, 4)
+      room:notifySkillInvoked(player, 'n_cc_sanxiao', 'masochism')
+
+      local use = room:askForUseCard(tgt, "slash", nil, "#n_cc_sanxiao-use", false, {
+        must_targets = { player.id },
+        bypass_distances = true,
+      })
+      if use then room:useCard(use) end
+      if (not use) or not use.damageDealt[player.id] then
+        room:addPlayerMark(tgt, MarkEnum.UncompulsoryInvalidity .. "-turn")
+      end
+    elseif choice == 'n_cc_jiamei' then
+      local to = room:askForChoosePlayers(player,
+        table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1,
+        '#n_cc_jiamei', self.name, false)[1]
+      local tgt = room:getPlayerById(to)
+
+      room:broadcastSkillInvoke(self.name, 5)
+      room:notifySkillInvoked(player, 'n_cc_jiamei', 'offensive')
+
+      tgt:drawCards(1, self.name)
+      room:useVirtualCard('slash', nil, player, tgt, self.name, true)
+    elseif choice == 'n_cc_gongzhen' then
+      local female = table.filter(room:getOtherPlayers(player), function(p) return p.gender == General.Female end)
+      local to = room:askForChoosePlayers(player, table.map(female, Util.IdMapper), 1, 1, '#n_cc_gongzhen',
+        self.name, false)[1]
+      local tgt = room:getPlayerById(to)
+
+      room:broadcastSkillInvoke(self.name, 6)
+      room:notifySkillInvoked(player, 'n_cc_gongzhen', 'control')
+
+      player:drawCards(1, self.name)
+      tgt:drawCards(1, self.name)
+      player:turnOver()
+      tgt:turnOver()
+    end
+  end,
+}
+caocao:addSkill(dianlun)
+Fk:loadTranslationTable{
+  ['n_jz__caocao'] = '典曹操',
+  ['n_jianxiong'] = '奸雄',
+  [':n_jianxiong'] = '当你受到伤害后，你可以选择： 1. 获得伤害牌；2. 摸一张牌。',
+  ['n_jianxiong_draw'] = '摸一张牌',
+  ['n_jianxiong_get'] = '获得伤害牌',
+  ['n_dianlun'] = '典论',
+  [':n_dianlun'] = '锁定技，每回合限一次，你在摸牌阶段外获得牌后，你须弃置一张牌并从随机2个典中爆一次典。' ..
+    '<br/><font color="blue">*论英：令你和一名其他角色依次进行闪电判定，直到有一方受到伤害为止，' ..
+    '其在开始判定之前可以对自己造成1点雷电伤害中止此流程。' ..
+    '<br/>*割须：弃置装备区的1张牌并回复1点体力。' ..
+    '<br/>*夺妻：整局游戏限一次，获得一名其他女性角色武将牌上的一个技能。' ..
+    '<br/>*三笑：指定一名角色，令其对你用一张无视距离的【杀】，若此杀未造成伤害，其本回合非锁定技失效。' ..
+    '<br/>*假寐：你令一名其他角色摸1张牌，再视为对其使用一张【杀】。' ..
+    '<br/>*共枕：指定一名女性角色，和你各摸1张牌并翻面。</font>',
+  ['#n_dianlun_start'] = '典论: 请弃置一张牌并爆典',
+  ['n_cc_lunying'] = '论英',
+  [':n_cc_lunying'] = '令你和一名其他角色依次进行闪电判定，直到有一方受到伤害为止，其在开始判定之前可以对自己造成1点雷电伤害中止此流程。',
+  ['#n_cc_lunying'] = '论英: 选择一名其他角色，和他谈论当世英雄！',
+  ['#n_cc_lunying_cancel'] = '论英: 你现在可以对自己造成一点雷电伤害并中止“论英”',
+  ['n_cc_gexu'] = '割须',
+  [':n_cc_gexu'] = '弃置装备区的1张牌并回复1点体力。',
+  ['#n_cc_gexu'] = '割须: 请弃置一张装备牌，回复1点体力',
+  ['n_cc_duoqi'] = '夺妻',
+  [':n_cc_duoqi'] = '获得一名其他女性角色武将牌上的一个技能。',
+  ['#n_cc_duoqi'] = '夺妻: 选择一名女性角色，永久获得她的一个技能',
+  ['#n_cc_duoqi-choice'] = '夺妻: 获得 %dest 的一个技能',
+  ['n_cc_sanxiao'] = '三笑',
+  [':n_cc_sanxiao'] = '指定一名角色，令其对你用一张无视距离的【杀】，若此杀未造成伤害，其本回合非锁定技失效。',
+  ['#n_cc_sanxiao'] = '三笑: 令一名其他角色【杀】你，若没杀中则其本回合非锁定技失效',
+  ['#n_cc_sanxiao-use'] = '三笑: 请对曹操出杀，不杀或未杀中则本回合非锁定技失效',
+  ['n_cc_jiamei'] = '假寐',
+  [':n_cc_jiamei'] = '你令一名其他角色摸1张牌，再视为对其使用一张【杀】。',
+  ['#n_cc_jiamei'] = '假寐: 令一名其他角色摸一张牌并视为对其出【杀】',
+  ['n_cc_gongzhen'] = '共枕',
+  [':n_cc_gongzhen'] = '指定一名其他女性角色，和你各摸1张牌并翻面。',
+  ['#n_cc_gongzhen'] = '共枕: 与一名女性角色各摸一张并翻面',
+}
+
 local xuchu = General(extension, "n_jz__xuchu", "wei", 4)
 local luoyi = fk.CreateTriggerSkill{
   name = 'n_luoyi',
@@ -466,6 +705,7 @@ luoyi:addRelatedSkill(luoyi_trigger)
 xuchu:addSkill(luoyi)
 local nuzhan = fk.CreateTriggerSkill{
   name = "n_jizhan",
+  anim_type = "offensive",
   events = {fk.AfterSkillEffect},
   can_trigger = function(self, _, target, player, data)
     return player:hasSkill(self.name) and player.phase == Player.NotActive and
@@ -485,7 +725,7 @@ local nuzhan = fk.CreateTriggerSkill{
       from = player.id,
       tos = { { target.id } },
       card = slash,
-      additionalDamage = target:getLostHp() == 0 and 1 or 0,
+      additionalDamage = target:isWounded() and 0 or 1,
       disresponsiveList = table.map(room.alive_players, Util.IdMapper),
     }
   end,
