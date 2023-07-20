@@ -418,7 +418,52 @@ Fk:loadTranslationTable{
 }
 
 local xuchu = General(extension, "n_jz__xuchu", "wei", 4)
---xuchu:addSkill("ex__luoyi")
+local luoyi = fk.CreateTriggerSkill{
+  name = 'n_luoyi',
+  anim_type = "offensive",
+  events = {fk.DrawNCards},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and data.n > 0
+  end,
+  on_use = function(self, event, target, player, data)
+    data.n = data.n - 1
+    player.room:addPlayerMark(player, "@@n_luoyi", 1)
+  end,
+
+  refresh_events = {fk.EventPhaseStart},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player.phase == Player.RoundStart
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "@@n_luoyi", 0)
+  end,
+}
+local luoyi_trigger = fk.CreateTriggerSkill{
+  name = "#n_luoyi_trigger",
+  mute = true,
+  events = {fk.DamageCaused},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and not data.chain and data.card and
+      ((player:getMark("@@n_luoyi") > 0 and (data.card.trueName == "slash" or data.card.name == "duel")) or
+      (#player:getCardIds("e") == 0 and data.card.name == "slash"))
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:broadcastSkillInvoke("n_luoyi")
+    room:notifySkillInvoked(player, "n_luoyi")
+    if player:getMark("@@n_luoyi") > 0 and (data.card.trueName == "slash" or data.card.name == "duel") then
+      data.damage = data.damage + 1
+    end
+    if #player:getCardIds("e") == 0 and data.card.name == "slash" then
+      data.damage = data.damage + 1
+    end
+  end,
+}
+luoyi:addRelatedSkill(luoyi_trigger)
+xuchu:addSkill(luoyi)
 local nuzhan = fk.CreateTriggerSkill{
   name = "n_jizhan",
   events = {fk.AfterSkillEffect},
@@ -440,8 +485,8 @@ local nuzhan = fk.CreateTriggerSkill{
       from = player.id,
       tos = { { target.id } },
       card = slash,
-      additionalDamage = 1,
-      disresponsiveList = { target.id },
+      additionalDamage = target:getLostHp() == 0 and 1 or 0,
+      disresponsiveList = table.map(room.alive_players, Util.IdMapper),
     }
   end,
 
@@ -459,11 +504,17 @@ local nuzhan = fk.CreateTriggerSkill{
 xuchu:addSkill(nuzhan)
 Fk:loadTranslationTable{
   ["n_jz__xuchu"] = "急许褚",
+  ["n_luoyi"] = '裸衣',
+  ["@@n_luoyi"] = '裸衣',
+  [':n_luoyi'] = '摸牌阶段，你可以少摸一张牌，若如此做，直到你的下回合开始，' ..
+    '你使用的【杀】或【决斗】造成的伤害+1；当你装备区里没有牌时，你的普通【杀】' ..
+    '造成的伤害+1。',
   ["n_jizhan"] = "急斩",
   ["@n_jizhan-turn"] = "急斩",
-  ["#n_jizhan-invoke"] = "急斩: 现在你可以视为对 %dest 使用一张强中且加伤的【杀】",
-  [":n_jizhan"] = "你的回合外，当其他角色于一回合内每发动6次技能后，你可以视为对其使用了一张无视距离、不可响应且伤害值+1的【杀】。" ..
-    '<br /><font color="red">（注：因为暂缺界裸衣，故先伤害+1；由于机制尚不完善，请不要汇报本技能的bug）</font>',
+  ["#n_jizhan-invoke"] = "急斩: 现在你可以视为对 %dest 使用一张强中的【杀】，可能有加伤",
+  [":n_jizhan"] = "你的回合外，当其他角色于一回合内每发动六次技能后，" ..
+    "你可以视为对其使用了一张不可响应的【杀】；若其未受伤，此【杀】伤害基数+1。" ..
+    '<br /><font color="red">（注：由于判断发动技能的相关机制尚不完善，请不要汇报关于技能发动次数统计的bug）</font>',
 }
 
 local lvbu = General(extension, "n_jz__lvbu", "qun", 4)
