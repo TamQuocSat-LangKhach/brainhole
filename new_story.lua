@@ -684,7 +684,7 @@ local luoyi_trigger = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target == player and not data.chain and data.card and
       ((player:getMark("@@n_luoyi") > 0 and (data.card.trueName == "slash" or data.card.name == "duel")) or
-      (#player:getCardIds("e") == 0 and data.card.name == "slash"))
+      (player:hasSkill(luoyi.name) and #player:getCardIds("e") == 0 and data.card.name == "slash"))
   end,
   on_cost = function(self, event, target, player, data)
     return true
@@ -696,7 +696,7 @@ local luoyi_trigger = fk.CreateTriggerSkill{
     if player:getMark("@@n_luoyi") > 0 and (data.card.trueName == "slash" or data.card.name == "duel") then
       data.damage = data.damage + 1
     end
-    if #player:getCardIds("e") == 0 and data.card.name == "slash" then
+    if player:hasSkill(luoyi.name) and #player:getCardIds("e") == 0 and data.card.name == "slash" then
       data.damage = data.damage + 1
     end
   end,
@@ -747,8 +747,9 @@ Fk:loadTranslationTable{
   ["n_luoyi"] = '裸衣',
   ["@@n_luoyi"] = '裸衣',
   [':n_luoyi'] = '摸牌阶段，你可以少摸一张牌，若如此做，直到你的下回合开始，' ..
-    '你使用的【杀】或【决斗】造成的伤害+1；当你装备区里没有牌时，你的普通【杀】' ..
+    '你使用的【杀】或【决斗】造成的伤害+1；若你装备区里没有牌，你的普通【杀】' ..
     '造成的伤害+1。',
+  ["#n_luoyi_trigger"] = '裸衣',
   ["n_jizhan"] = "急斩",
   ["@n_jizhan-turn"] = "急斩",
   ["#n_jizhan-invoke"] = "急斩: 现在你可以视为对 %dest 使用一张强中的【杀】，可能有加伤",
