@@ -5,7 +5,7 @@ Fk:loadTranslationTable{
   ["brainhole_new_story"] = "脑洞-新的故事",
 }
 
-local n_miaosha = General(extension, "n_miaosha", "wei", 4)
+local n_guoxiu = General(extension, "n_guoxiu", "wei", 4)
 local n_cizhi = fk.CreateTriggerSkill{
   name = "n_cizhi",
   anim_type = "offensive",
@@ -23,12 +23,83 @@ local n_cizhi = fk.CreateTriggerSkill{
     }
   end,
 }
-n_miaosha:addSkill(n_cizhi)
+n_guoxiu:addSkill(n_cizhi)
 Fk:loadTranslationTable{
-  ["n_miaosha"] = "郭修",
+  ["n_guoxiu"] = "郭修",
   ["n_cizhi"] = "刺智",
   [":n_cizhi"] = "当你对一名角色造成伤害后，若你的体力值不大于其，" ..
     "则你可以对其造成一点伤害。",
+}
+
+local n_wanghou = General(extension, "n_wanghou", "wei", 3)
+local n_jianliang = fk.CreateTriggerSkill{
+  name = "n_jianliang",
+  anim_type = "control",
+  events = {fk.GamePrepared},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and #player.room:getCardsFromPileByRule("peach") > 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local bigNumber = #room.draw_pile
+    local peachs = Fk:cloneCard("peach")
+    peachs:addSubcards(room:getCardsFromPileByRule("peach", bigNumber))
+    player:addToPile("n_liang", peachs, true, self.name)
+    for _, p in ipairs(room.players) do
+      room:handleAddLoseSkills(p, "n_fenliang", nil, true, false)
+    end
+  end,
+}
+local n_fenliang = fk.CreateActiveSkill{
+  name = "n_fenliang",
+  anim_type = "support",
+  card_num = 3,
+  target_num = 1,
+  card_filter = function(self, to_select, selected)
+    return #selected < 3 and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
+  end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and #Fk:currentRoom():getPlayerById(to_select):getPile("n_liang") > 0
+  end,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name) == 0 and player:isWounded()
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local supply = Fk:cloneCard("peach")
+    supply:addSubcards(table.random(target:getPile("n_liang"), math.min(math.random(player:getLostHp()))))
+    room:obtainCard(player, supply, false, fk.ReasonGive)
+  end,
+}
+local n_anjun = fk.CreateTriggerSkill{
+  name = "n_anjun",
+  anim_type = "negative",
+  frequency = Skill.Compulsory,
+  events = {fk.DamageCaused},
+  can_trigger = function(self, event, target, player, data)
+    return data.to == player and player:hasSkill(self.name) and #player:getPile("n_liang") == 0 and
+    target and (table.contains({"caocao", "godcaocao"}, Fk.generals[target.general].trueName) or target.role == "lord")
+  end,
+  on_use = function(self, event, target, player, data)
+    data.damage = data.damage + 1
+  end,
+}
+n_wanghou:addSkill(n_jianliang)
+n_wanghou:addRelatedSkill(n_fenliang)
+n_wanghou:addSkill(n_anjun)
+Fk:loadTranslationTable{
+  ["n_wanghou"] = "王垕",
+  ["n_jianliang"] = "监粮",
+  [":n_jianliang"] = "游戏开始前，你将牌堆中所有【桃】置于武将牌上，称为“粮”；然后再令所有角色获得技能“分粮”。",
+  ["n_fenliang"] = "分粮",
+  [":n_fenliang"] = "出牌阶段限一次，若你已受伤，你可以交给有“粮”的角色三张手牌，从“粮”中获得随机的1~X张牌（X为你损失体力值）。",
+  ["n_anjun"] = "安军",
+  [":n_anjun"] = "锁定技，若你没有“粮”，曹操或者主公对你造成的伤害+1。",
+  ["n_liang"] = "粮",
 }
 
 local n_jiequan = General(extension, "n_jiequan", "wu", 4)
