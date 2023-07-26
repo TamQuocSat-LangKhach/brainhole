@@ -71,8 +71,15 @@ local n_fenliang = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
     local supply = Fk:cloneCard("peach")
-    supply:addSubcards(table.random(target:getPile("n_liang"), math.min(math.random(player:getLostHp()))))
-    room:obtainCard(player, supply, false, fk.ReasonGive)
+    supply:addSubcards(table.random(
+      target:getPile("n_liang"),
+      math.min(math.random(1, player:getLostHp()), #target:getPile("n_liang"))
+    ))
+
+    local tmp = Fk:cloneCard 'slash'
+    tmp:addSubcards(effect.cards)
+    room:obtainCard(target, tmp, false, fk.ReasonGive)
+    room:obtainCard(player, supply, false)
   end,
 }
 local n_anjun = fk.CreateTriggerSkill{
