@@ -86,7 +86,7 @@ local n_yegeng = fk.CreateTriggerSkill{
     local room = player.room
     local mark_name = "@n_yegeng"
     if event == fk.EventPhaseStart then
-      self.cost_data = player:getMark(mark_name) >= 3
+      self.cost_data = player:getMark(mark_name) >= 3 + player:usedSkillTimes(self.name, Player.HistoryRound)
       room:setPlayerMark(player, mark_name, 0)
     else
       room:addPlayerMark(player, mark_name, 1)
@@ -102,8 +102,8 @@ Fk:loadTranslationTable{
     "上一张非转化普通锦囊牌。",
   ["n_yegeng"] = "夜更",
   ["@n_yegeng"] = "夜更",
-  [":n_yegeng"] = "锁定技，结束阶段，若你本回合使用普通锦囊牌数量不小于3，" ..
-    "你进行一个额外的回合，否则你摸一张牌。",
+  [":n_yegeng"] = "锁定技，结束阶段，若你本回合使用普通锦囊牌数量不小于3+X，" ..
+    "你进行一个额外的回合，否则你摸一张牌。（X为你本轮内发动过该技能的次数）",
 }
 
 local n_wch = General(extension, "n_wch", "qun", 3)
