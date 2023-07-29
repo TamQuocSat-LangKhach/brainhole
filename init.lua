@@ -1167,7 +1167,7 @@ local chiyao = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local c = player.room:askForDiscard(player, 1, 1, true, self.name, true,
-      ".|.|heart,diamond", "#n_chiyao-discard:::" .. data.card:toLogString(), true)
+      ".|.|heart", "#n_chiyao-discard:::" .. data.card:toLogString(), true)
 
     if c[1] then
       self.cost_data = c[1]
@@ -1216,9 +1216,9 @@ guojicheng:addSkill(rulai)
 Fk:loadTranslationTable{
   ["n_guojicheng"] = "郭继承",
   ["n_chiyao"] = "斥谣",
-  [":n_chiyao"] = "其他角色使用伤害牌时，你可以弃置一张红色牌" ..
-    "令此牌无效，若你弃置了红桃牌，则你弃置其一张牌。",
-  ["#n_chiyao-discard"] = "斥谣: 你可以弃置一张红色牌令 %arg 无效",
+  [":n_chiyao"] = "其他角色使用伤害牌时，你可以弃置一张红桃牌" ..
+    "令此牌无效，然后你弃置其一张牌。",
+  ["#n_chiyao-discard"] = "斥谣: 你可以弃置一张红桃牌令 %arg 无效",
   ["n_rulai"] = "如来",
   [":n_rulai"] = "锁定技，当【杀】结算结束后，若其对某些目标无效或者被抵消，你摸一张牌。",
 
