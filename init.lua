@@ -1156,6 +1156,80 @@ Fk:loadTranslationTable{
   ["@n_chunzhen"] = "纯真",
 }
 
+local guojicheng = General(extension, "n_guojicheng", "qun", 3)
+local chiyao = fk.CreateTriggerSkill{
+  name = "n_chiyao",
+  anim_type = "control",
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    return target ~= player and player:hasSkill(self.name) and
+      data.card.is_damage_card and data.card.color == Card.Black and
+      not player:isAllNude()
+  end,
+  on_cost = function(self, event, target, player, data)
+    local c = player.room:askForDiscard(player, 1, 1, true, self.name, true,
+      ".|.|heart", "#n_chiyao-discard:::" .. data.card:toLogString(), true)
+
+    if c[1] then
+      self.cost_data = c[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:throwCard(self.cost_data, self.name, player, player)
+    if not target:isAllNude() then
+      local card = room:askForCardChosen(player, target, "he", self.name)
+      room:throwCard({card}, self.name, target, player)
+    end
+
+    -- FIXME: CardUsing return true 没法无效啊
+    -- return true
+    room.logic:getCurrentEvent().parent:shutdown()
+  end,
+}
+guojicheng:addSkill(chiyao)
+local rulai = fk.CreateTriggerSkill{
+  name = "n_rulai",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self.name) then return end
+    if data.card.trueName ~= "slash" then return end
+    local room = player.room
+    local cur = room.logic:getCurrentEvent()
+    if cur.interrupted then return true end
+    local effects = cur:searchEvents(GameEvent.CardEffect, math.huge)
+    for _, e in ipairs(effects) do
+      if e.interrupted and not e.data[1].isCancellOut then
+        if not room:getPlayerById(e.data[1].to).dead then
+          return true
+        end
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(1, self.name)
+  end,
+}
+guojicheng:addSkill(rulai)
+Fk:loadTranslationTable{
+  ["n_guojicheng"] = "郭继承",
+  ["n_chiyao"] = "斥谣",
+  [":n_chiyao"] = "其他角色使用黑色伤害牌时，你可以弃置一张红桃牌" ..
+    "令此牌无效，然后你弃置其一张牌。",
+  ["#n_chiyao-discard"] = "斥谣: 你可以弃置一张红桃牌令 %arg 无效",
+  ["n_rulai"] = "如来",
+  [":n_rulai"] = "锁定技，当【杀】结算结束后，若其对某些目标无效，你摸一张牌。",
+
+  ["$n_chiyao1"] = "我说你为什么非得找这种事，你告诉我你居心何在！",
+  ["$n_chiyao2"] = "你为什么非得引导我们年轻人，觉得我们很差、不好？",
+  ["$n_rulai1"] = "真来了吗？如~来。",
+  ["$n_rulai2"] = "到底来没来？如~来。",
+  ["~n_guojicheng"] = "你怎么可以骂老师…",
+}
+
 local extension_card = Package("brainhole_cards", Package.CardPack)
 
 local brickSkill = fk.CreateActiveSkill{
