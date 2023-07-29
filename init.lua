@@ -1163,12 +1163,11 @@ local chiyao = fk.CreateTriggerSkill{
   events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
     return target ~= player and player:hasSkill(self.name) and
-      data.card.is_damage_card and data.card.color == Card.Black and
-      not player:isAllNude()
+      data.card.is_damage_card and not player:isAllNude()
   end,
   on_cost = function(self, event, target, player, data)
     local c = player.room:askForDiscard(player, 1, 1, true, self.name, true,
-      ".|.|heart", "#n_chiyao-discard:::" .. data.card:toLogString(), true)
+      ".|.|heart,diamond", "#n_chiyao-discard:::" .. data.card:toLogString(), true)
 
     if c[1] then
       self.cost_data = c[1]
@@ -1178,7 +1177,7 @@ local chiyao = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:throwCard(self.cost_data, self.name, player, player)
-    if not target:isAllNude() then
+    if Fk:getCardById(self.cost_data).suit == Card.Heart and not target:isAllNude() then
       local card = room:askForCardChosen(player, target, "he", self.name)
       room:throwCard({card}, self.name, target, player)
     end
@@ -1202,7 +1201,7 @@ local rulai = fk.CreateTriggerSkill{
     if cur.interrupted then return true end
     local effects = cur:searchEvents(GameEvent.CardEffect, math.huge)
     for _, e in ipairs(effects) do
-      if e.interrupted and not e.data[1].isCancellOut then
+      if e.interrupted then
         if not room:getPlayerById(e.data[1].to).dead then
           return true
         end
@@ -1217,11 +1216,11 @@ guojicheng:addSkill(rulai)
 Fk:loadTranslationTable{
   ["n_guojicheng"] = "郭继承",
   ["n_chiyao"] = "斥谣",
-  [":n_chiyao"] = "其他角色使用黑色伤害牌时，你可以弃置一张红桃牌" ..
-    "令此牌无效，然后你弃置其一张牌。",
-  ["#n_chiyao-discard"] = "斥谣: 你可以弃置一张红桃牌令 %arg 无效",
+  [":n_chiyao"] = "其他角色使用伤害牌时，你可以弃置一张红色牌" ..
+    "令此牌无效，若你弃置了红桃牌，则你弃置其一张牌。",
+  ["#n_chiyao-discard"] = "斥谣: 你可以弃置一张红色牌令 %arg 无效",
   ["n_rulai"] = "如来",
-  [":n_rulai"] = "锁定技，当【杀】结算结束后，若其对某些目标无效，你摸一张牌。",
+  [":n_rulai"] = "锁定技，当【杀】结算结束后，若其对某些目标无效或者被抵消，你摸一张牌。",
 
   ["$n_chiyao1"] = "我说你为什么非得找这种事，你告诉我你居心何在！",
   ["$n_chiyao2"] = "你为什么非得引导我们年轻人，觉得我们很差、不好？",
