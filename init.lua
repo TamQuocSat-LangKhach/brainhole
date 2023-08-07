@@ -1163,7 +1163,7 @@ local chiyao = fk.CreateTriggerSkill{
   events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
     return target ~= player and player:hasSkill(self.name) and
-      data.card.is_damage_card and not player:isAllNude()
+      data.card.is_damage_card and not data.card:isVirtual() and not player:isAllNude()
   end,
   on_cost = function(self, event, target, player, data)
     local c = player.room:askForDiscard(player, 1, 1, true, self.name, true,
@@ -1216,7 +1216,7 @@ guojicheng:addSkill(rulai)
 Fk:loadTranslationTable{
   ["n_guojicheng"] = "郭继承",
   ["n_chiyao"] = "斥谣",
-  [":n_chiyao"] = "其他角色使用伤害牌时，你可以弃置一张红桃牌" ..
+  [":n_chiyao"] = "其他角色使用非转化伤害牌时，你可以弃置一张红桃牌" ..
     "令此牌无效，然后你弃置其一张牌。",
   ["#n_chiyao-discard"] = "斥谣: 你可以弃置一张红桃牌令 %arg 无效",
   ["n_rulai"] = "如来",
