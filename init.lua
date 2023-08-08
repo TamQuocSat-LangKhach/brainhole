@@ -996,6 +996,7 @@ local biancheng = fk.CreateViewAsSkill{
   pattern = ".",
   interaction = function(self)
     local card = Fk:getCardById(Self:getMark(self.name))
+    if not card then return end
     return UI.ComboBox {
       choices = { Fk:translate(card.name) .. '['
         .. Fk:translate("log_" .. card:getSuitString())
@@ -1022,6 +1023,7 @@ local biancheng = fk.CreateViewAsSkill{
   -- end,
   enabled_at_response = function(self, player)
     local card = Fk:getCardById(player:getMark(self.name))
+    if not card then return end
     -- 服务器端判断无懈的时候这个pattern是nil。。
     local pat = Fk.currentResponsePattern or "nullification"
     return card.suit ~= Card.Spade and
