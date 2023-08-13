@@ -37,7 +37,7 @@ local n_juanlao = fk.CreateViewAsSkill{
     if player:usedSkillTimes(self.name, Player.HistoryPhase) > 0 then return end
     local cname = player:getMark("@n_juanlao")
     if cname == 0 then return end
-    return Fk:cloneCard(cname).skill:canUse(player)
+    return player:canUse(Fk:cloneCard(cname))
   end,
   enabled_at_response = function(self, player)
     -- FIXME: should have some way to know current response pattern here

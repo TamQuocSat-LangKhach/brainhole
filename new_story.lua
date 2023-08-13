@@ -311,7 +311,7 @@ local n_dunshi = fk.CreateViewAsSkill{
     for _, name in ipairs(all_names) do
       if type(mark) ~= "table" or not table.contains(mark, name) then
         local to_use = Fk:cloneCard(name)
-        if ((Fk.currentResponsePattern == nil and to_use.skill:canUse(Self, to_use) and not Self:prohibitUse(to_use)) or
+        if ((Fk.currentResponsePattern == nil and Self:canUse(to_use) and not Self:prohibitUse(to_use)) or
             (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(to_use))) then
           table.insertIfNeed(names, name)
         end
@@ -339,7 +339,7 @@ local n_dunshi = fk.CreateViewAsSkill{
     for _, name in ipairs(names) do
       if type(mark) ~= "table" or not table.contains(mark, name) then
         local to_use = Fk:cloneCard(name)
-        if to_use.skill:canUse(Self, to_use) and not Self:prohibitUse(to_use) then
+        if Self:canUse(to_use) and not Self:prohibitUse(to_use) then
           return true
         end
       end
