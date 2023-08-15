@@ -976,4 +976,158 @@ Fk:loadTranslationTable{
   ["~n_jz__lvbu"] = "刘备！奸贼！汝乃天下最无信义之人！",
 }
 
+local weiyan = General(extension, "n_jz__weiyan", "shu", 4)
+local kuangle = fk.CreateTriggerSkill{
+  name = "n_kuangle",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = { fk.CardUseFinished },
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and
+      data.card.suit ~= Card.NoSuit
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local mark = player:getMark("@n_kuangle")
+    if mark == 0 then mark = {} end
+
+    local suit = data.card:getSuitString(true)
+    if not table.contains(mark, suit) then
+      table.insert(mark, suit)
+      room:setPlayerMark(player, "@n_kuangle", mark)
+      player:drawCards(1, self.name)
+    else
+      local choices = { 'n_kuangle-disresponsive' }
+      local used = player:getMark("n_kuangle-turn")
+      if player:isWounded() then
+        table.insert(choices, 1, "n_kuangle-recover")
+      end
+      ---[[
+      if not (type(used) == "table" and table.contains(used, suit)) then
+        table.insert(choices, 1, "n_kuangle-draw")
+      end
+      --]]
+
+      local choice = room:askForChoice(player, choices, self.name)
+      if choice == "n_kuangle-draw" then
+        if used == 0 then used = {} end
+        table.insert(used, suit)
+        room:setPlayerMark(player, "n_kuangle-turn", used)
+        player:drawCards(1, self.name)
+      elseif choice == "n_kuangle-recover" then
+        room:recover {
+          num = 1,
+          who = player,
+          skillName = self.name,
+        }
+      else
+        room:setPlayerMark(player, "@@n_kuangle", 1)
+      end
+    end
+  end,
+}
+local kuangle_dr = fk.CreateTriggerSkill{
+  name = "#n_kuangle_dr",
+  main_skill = kuangle,
+  events = {fk.CardUsing},
+  frequency = Skill.Compulsory,
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:getMark("@@n_kuangle") > 0
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:notifySkillInvoked(player, "n_kuangle", "offensive")
+    room:broadcastSkillInvoke("n_kuangle")
+    data.disresponsiveList = table.map(room.alive_players, Util.IdMapper)
+    room:setPlayerMark(player, "@@n_kuangle", 0)
+  end,
+}
+kuangle:addRelatedSkill(kuangle_dr)
+weiyan:addSkill(kuangle)
+
+local shichaProhibit = fk.CreateProhibitSkill{
+  name = "#n_shicha_prohibit",
+  prohibit_use = function(self, player, card)
+    -- FIXME: 确保是因为【杀】而出闪，并且指明好事件id
+    if Fk.currentResponsePattern ~= "jink" or card.name ~= "jink" then
+      return false
+    end
+
+    if player:getMark("n_shicha") == 0 then return false end
+
+    local suits = player:getMark("@n_kuangle")
+    if suits == 0 then return false end
+    if table.contains(suits, card:getSuitString(true)) then
+      return true
+    end
+  end,
+}
+local shicha = fk.CreateTriggerSkill{
+  name = "n_shicha",
+  anim_type = "negative",
+  mute = true,
+  events = {fk.TargetSpecified},
+  can_trigger = function(self, event, target, player, data)
+    if not (target == player and data.card.trueName == "slash" and
+      #TargetGroup:getRealTargets(data.tos) == 1) then return false end
+
+    local room = player.room
+    local to = room:getPlayerById(data.to)
+    return to:hasSkill(self.name) and to:getMark("@n_kuangle") ~= 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#n_shicha_invoke:" .. data.to)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local logic = room.logic
+    local cardUseEvent = logic:getCurrentEvent().parent
+
+    -- 让他不能出闪
+    local to = room:getPlayerById(data.to)
+    room:broadcastSkillInvoke(self.name)
+    room:notifySkillInvoked(to, self.name)
+    room:setPlayerMark(to, self.name, 1)
+    cardUseEvent:addExitFunc(function()
+      room:setPlayerMark(to, self.name, 0)
+      room:setPlayerMark(to, "@n_kuangle", 0)
+    end)
+
+    local suits = to:getMark("@n_kuangle")
+    if suits == 0 or #suits <= 2 then return end
+
+    -- 展示牌堆顶的牌，计算加伤数量
+    local cards = room:getNCards(#suits - 2)
+    room:moveCardTo(cards, Card.DiscardPile) -- FIXME
+    data.additionalDamage = (data.additionalDamage or 0) +
+    #table.filter(cards, function(id)
+      local c = Fk:getCardById(id)
+      return table.contains(suits, c:getSuitString(true))
+    end)
+  end,
+}
+shicha:addRelatedSkill(shichaProhibit)
+weiyan:addSkill(shicha)
+
+Fk:loadTranslationTable{
+  ['n_jz__weiyan'] = "乐魏延",
+  ['n_kuangle'] = '狂乐',
+  ['#n_kuangle_dr'] = '狂乐',
+  [':n_kuangle'] = '锁定技，当你使用牌结算完成后，若其花色未被记录，' ..
+    "则你摸1张牌并记录此花色，否则你选择一项：" ..
+    "1. 摸1张牌，本回合使用此花色牌不能再选择此项；" ..
+    "2. 回复1点体力；" ..
+    "3. 你使用的下一张牌不可被响应。",
+  ["@n_kuangle"] = "狂乐",
+  ["@@n_kuangle"] = "下一张强中",
+  ["n_kuangle-draw"] = "摸1张牌，本回合使用此花色牌不能再选择此项",
+  ["n_kuangle-recover"] = "回复1点体力",
+  ["n_kuangle-disresponsive"] = "你使用的下一张牌不可被响应",
+
+  ["n_shicha"] = "失察",
+  [":n_shicha"] = "其他角色以你为唯一目标使用【杀】后，其可以展示牌堆顶的X张牌（X为你“狂乐”记录的花色数-2，且至少为0），然后每有一张牌花色与“狂乐”记录的花色相同，令此【杀】伤害+1，且你不能使用“狂乐”记录花色的牌响应此【杀】。若如此做，此【杀】结算结束后，清除“狂乐”记录的花色。",
+  ["#n_shicha_invoke"] = "是否发动 %src 的技能“失察”，对其可能强中并可能加伤？",
+}
+
 return extension
