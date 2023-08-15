@@ -999,11 +999,13 @@ local kuangle = fk.CreateTriggerSkill{
     else
       local choices = { 'n_kuangle-disresponsive' }
       local used = player:getMark("n_kuangle-turn")
+      --[[
       if player:isWounded() then
         table.insert(choices, 1, "n_kuangle-recover")
       end
+      --]]
       ---[[
-      if not (type(used) == "table" and table.contains(used, suit)) then
+      if not (type(used) == "table" and table.contains(used, data.card.color)) then
         table.insert(choices, 1, "n_kuangle-draw")
       end
       --]]
@@ -1011,7 +1013,7 @@ local kuangle = fk.CreateTriggerSkill{
       local choice = room:askForChoice(player, choices, self.name)
       if choice == "n_kuangle-draw" then
         if used == 0 then used = {} end
-        table.insert(used, suit)
+        table.insert(used, data.card.color)
         room:setPlayerMark(player, "n_kuangle-turn", used)
         player:drawCards(1, self.name)
       elseif choice == "n_kuangle-recover" then
@@ -1109,6 +1111,7 @@ local shicha = fk.CreateTriggerSkill{
 }
 shicha:addRelatedSkill(shichaProhibit)
 weiyan:addSkill(shicha)
+weiyan:addSkill("kuanggu")
 
 Fk:loadTranslationTable{
   ['n_jz__weiyan'] = "乐魏延",
@@ -1116,12 +1119,12 @@ Fk:loadTranslationTable{
   ['#n_kuangle_dr'] = '狂乐',
   [':n_kuangle'] = '锁定技，当你使用牌结算完成后，若其花色未被记录，' ..
     "则你摸1张牌并记录此花色，否则你选择一项：" ..
-    "1. 摸1张牌，本回合使用此花色牌不能再选择此项；" ..
-    "2. 回复1点体力；" ..
-    "3. 你使用的下一张牌不可被响应。",
+    "1. 摸1张牌，本回合使用此颜色牌不能再选择此项；" ..
+    -- "2. 回复1点体力；" ..
+    "2. 你使用的下一张牌不可被响应。",
   ["@n_kuangle"] = "狂乐",
   ["@@n_kuangle"] = "下一张强中",
-  ["n_kuangle-draw"] = "摸1张牌，本回合使用此花色牌不能再选择此项",
+  ["n_kuangle-draw"] = "摸1张牌，本回合使用此颜色牌不能再选择此项",
   ["n_kuangle-recover"] = "回复1点体力",
   ["n_kuangle-disresponsive"] = "你使用的下一张牌不可被响应",
 
