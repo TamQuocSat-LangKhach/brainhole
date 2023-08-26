@@ -582,7 +582,7 @@ local dianlun = fk.CreateTriggerSkill{
         '#n_cc_lunying', self.name, false)[1]
       local tgt = room:getPlayerById(to)
 
-      room:broadcastSkillInvoke(self.name, 1)
+      player:broadcastSkillInvoke(self.name, 1)
       room:notifySkillInvoked(player, 'n_cc_lunying', 'special')
 
       while true do
@@ -631,7 +631,7 @@ local dianlun = fk.CreateTriggerSkill{
     elseif choice == 'n_cc_gexu' then
       room:askForDiscard(player, 1, 1, true, self.name, false, '.|.|.|equip', '#n_cc_gexu')
 
-      room:broadcastSkillInvoke(self.name, 2)
+      player:broadcastSkillInvoke(self.name, 2)
       room:notifySkillInvoked(player, 'n_cc_gexu', 'support')
 
       room:recover { num = 1, skillName = self.name, who = player }
@@ -641,7 +641,7 @@ local dianlun = fk.CreateTriggerSkill{
         self.name, false)[1]
       local tgt = room:getPlayerById(to)
 
-      room:broadcastSkillInvoke(self.name, 3)
+      player:broadcastSkillInvoke(self.name, 3)
       room:notifySkillInvoked(player, 'n_cc_duoqi', 'control')
 
       local skills = table.map(Fk.generals[tgt.general].skills, Util.NameMapper)
@@ -656,7 +656,7 @@ local dianlun = fk.CreateTriggerSkill{
         '#n_cc_sanxiao', self.name, false)[1]
       local tgt = room:getPlayerById(to)
 
-      room:broadcastSkillInvoke(self.name, 4)
+      player:broadcastSkillInvoke(self.name, 4)
       room:notifySkillInvoked(player, 'n_cc_sanxiao', 'masochism')
 
       local use = room:askForUseCard(tgt, "slash", nil, "#n_cc_sanxiao-use", false, {
@@ -673,7 +673,7 @@ local dianlun = fk.CreateTriggerSkill{
         '#n_cc_jiamei', self.name, false)[1]
       local tgt = room:getPlayerById(to)
 
-      room:broadcastSkillInvoke(self.name, 5)
+      player:broadcastSkillInvoke(self.name, 5)
       room:notifySkillInvoked(player, 'n_cc_jiamei', 'offensive')
 
       tgt:drawCards(1, self.name)
@@ -684,7 +684,7 @@ local dianlun = fk.CreateTriggerSkill{
         self.name, false)[1]
       local tgt = room:getPlayerById(to)
 
-      room:broadcastSkillInvoke(self.name, 6)
+      player:broadcastSkillInvoke(self.name, 6)
       room:notifySkillInvoked(player, 'n_cc_gongzhen', 'control')
 
       player:drawCards(1, self.name)
@@ -769,7 +769,7 @@ local luoyi_trigger = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke("n_luoyi")
+    player:broadcastSkillInvoke("n_luoyi")
     room:notifySkillInvoked(player, "n_luoyi")
     if player:getMark("@@n_luoyi") > 0 and (data.card.trueName == "slash" or data.card.name == "duel") then
       data.damage = data.damage + 1
@@ -860,7 +860,7 @@ local yixiaoTrig = fk.CreateTriggerSkill{
       1, 1, "#n_yixiao-duel", "n_yixiao", false)[1]
 
     room:notifySkillInvoked(player, "n_yixiao", "offensive")
-    room:broadcastSkillInvoke("n_yixiao", table.random{ 3, 4 })
+    player:broadcastSkillInvoke("n_yixiao", table.random{ 3, 4 })
     room:useCard {
       from = player.id,
       tos = { { to } },
@@ -904,7 +904,7 @@ local yixiao = fk.CreateTriggerSkill{
     else
       local tgt = room:getPlayerById(self.cost_data.tos[1][1])
       room:notifySkillInvoked(tgt, self.name, "negative")
-      room:broadcastSkillInvoke(self.name, table.random{ 5, 6 })
+      tgt:broadcastSkillInvoke(self.name, table.random{ 5, 6 })
       room:useCard(self.cost_data)
       to = room:askForChoosePlayers(player, table.map(
         table.filter(room:getOtherPlayers(player), function(p)
@@ -916,7 +916,7 @@ local yixiao = fk.CreateTriggerSkill{
     end
 
     room:notifySkillInvoked(player, self.name, "support")
-    room:broadcastSkillInvoke(self.name, table.random{ 1, 2 })
+    player:broadcastSkillInvoke(self.name, table.random{ 1, 2 })
     room:setPlayerMark(room:getPlayerById(to), "@@n_yifu", 1)
   end,
 }
@@ -1040,7 +1040,7 @@ local kuangle_dr = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:notifySkillInvoked(player, "n_kuangle", "offensive")
-    room:broadcastSkillInvoke("n_kuangle")
+    player:broadcastSkillInvoke("n_kuangle")
     data.disresponsiveList = table.map(room.alive_players, Util.IdMapper)
     room:setPlayerMark(player, "@@n_kuangle", 0)
   end,
@@ -1088,7 +1088,7 @@ local shicha = fk.CreateTriggerSkill{
 
     -- 让他不能出闪
     local to = room:getPlayerById(data.to)
-    room:broadcastSkillInvoke(self.name)
+    to:broadcastSkillInvoke(self.name)
     room:notifySkillInvoked(to, self.name)
     room:setPlayerMark(to, self.name, 1)
     cardUseEvent:addExitFunc(function()

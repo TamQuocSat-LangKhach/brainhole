@@ -141,7 +141,7 @@ local n_shenjiao_buyi = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke("n_shenjiao")
+    player:broadcastSkillInvoke("n_shenjiao")
     room:notifySkillInvoked(player, "n_shenjiao", "support")
     room:removePlayerMark(player, "@n_jiao", 1)
     room:doIndicate(player.id, { target.id })
@@ -226,10 +226,10 @@ local n_hunyuan = fk.CreateTriggerSkill{
     local room = player.room
     room:notifySkillInvoked(player, self.name)
     if not (event == fk.Damage or event == fk.Damaged) then
-      room:broadcastSkillInvoke(self.name, self.cost_data)
+      player:broadcastSkillInvoke(self.name, self.cost_data)
       data.damageType = self.cost_data
     else
-      room:broadcastSkillInvoke(self.name, table.random{4, 5})
+      player:broadcastSkillInvoke(self.name, table.random{4, 5})
       player:drawCards(1, self.name)
       room:damage{
         from = player,
@@ -267,14 +267,14 @@ local n_lianbian = fk.CreateActiveSkill{
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    room:broadcastSkillInvoke(self.name, 1)
+    player:broadcastSkillInvoke(self.name, 1)
     room:notifySkillInvoked(player, self.name)
     room:delay(2700)
 
     room:throwCard(player:getCardIds(Player.Hand), self.name, player, player)
 
     for i = 1, 5 do
-      room:broadcastSkillInvoke(self.name, i + 1)
+      player:broadcastSkillInvoke(self.name, i + 1)
       if not player:isAlive() then return end
       local judge = {
         who = player,
@@ -291,7 +291,7 @@ local n_lianbian = fk.CreateActiveSkill{
         }
       end
     end
-    room:broadcastSkillInvoke(self.name, 7)
+    player:broadcastSkillInvoke(self.name, 7)
   end,
 }
 n_mabaoguo:addSkill(n_lianbian)
@@ -1127,14 +1127,14 @@ local chunzhen = fk.CreateTriggerSkill{
     local room = player.room
 
     if event == fk.AfterCardTargetDeclared then
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       room:notifySkillInvoked(player, self.name, "special")
       local tos = room:askForChoosePlayers(player, TargetGroup:getRealTargets(data.tos), 1, 1,
         "#n_chunzhen-choose", self.name, false)
       TargetGroup:removeTarget(data.tos, tos[1])
       room:addPlayerMark(player, "@n_chunzhen", 1)
     else
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       room:notifySkillInvoked(player, self.name, "defensive")
       room:removePlayerMark(player, "@n_chunzhen", 1)
       data.damage = data.damage - 1
