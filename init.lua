@@ -339,7 +339,7 @@ local n_lingxiu = fk.CreateTriggerSkill{
     end) == 0 then return end
 
     for _, move in ipairs(data) do
-      if move.to == player.id and move.toArea == Card.PlayerHand then
+      if move.to == player.id and move.toArea == Card.PlayerHand and move.skillName ~= self.name then
         return true
       end
     end
@@ -351,7 +351,7 @@ local n_lingxiu = fk.CreateTriggerSkill{
     for _, p in ipairs(room:getOtherPlayers(player)) do
       goal = math.max(goal, p:getHandcardNum())
     end
-    player:drawCards(goal - player:getHandcardNum())
+    player:drawCards(math.min(goal - player:getHandcardNum(), 5), self.name)
   end,
 }
 n_qunlingdao:addSkill(n_lingxiu)
@@ -399,7 +399,7 @@ n_qunlingdao:addSkill(n_qunzhi)
 Fk:loadTranslationTable{
   ["n_qunlingdao"] = "群领导",
   ["n_lingxiu"] = "领袖",
-  [":n_lingxiu"] = "锁定技，你获得手牌后，将手牌摸至全场最多。",
+  [":n_lingxiu"] = "锁定技，当你不以此法获得手牌后，将手牌摸至全场最多。（一次最多摸5张）",
   ["n_qunzhi"] = "群智",
   [":n_qunzhi"] = "出牌阶段限一次，若你的体力值不超过你的手牌数，" ..
     "你可以将一半的手牌当一张普通锦囊牌（无懈除外）使用。" ..
@@ -915,7 +915,7 @@ local n_jujie = fk.CreateTriggerSkill{
       return data.from ~= player.id and data.card.is_damage_card
     else
       local e = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
-      return (e.n_jujie_list or {})[player.id] ~= nil and data.from and
+      return (e and e.n_jujie_list or {})[player.id] ~= nil and data.from and
         data.from:getHandcardNum() > player:getHandcardNum()
     end
   end,
