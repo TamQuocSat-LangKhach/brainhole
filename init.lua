@@ -192,8 +192,8 @@ local n_hunyuan = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if not (target == player and player:hasSkill(self.name)) then return end
     if event == fk.Damage or event == fk.Damaged then
-      return player:getMark("n_hydmg1") == player:getMark("n_hydmg2") and
-        player:getMark("n_hydmg2") == player:getMark("n_hydmg3")
+      return player:getMark("n_hydmg1") - player:getMark("n_hydmg2") ==
+        player:getMark("n_hydmg2") - player:getMark("n_hydmg3")
     else
       return true
     end
@@ -246,7 +246,7 @@ local n_hunyuan = fk.CreateTriggerSkill{
   on_refresh = function(self, event, target, player, data)
     local room = player.room
     room:addPlayerMark(player, "n_hydmg" .. data.damageType, data.damage)
-    room:setPlayerMark(player, "@" .. self.name, string.format("%d-%d-%d",
+    room:setPlayerMark(player, "@" .. self.name, string.format("%d普%d雷%d火",
       player:getMark("n_hydmg1"),
       player:getMark("n_hydmg2"),
       player:getMark("n_hydmg3")
@@ -269,7 +269,6 @@ local n_lianbian = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     player:broadcastSkillInvoke(self.name, 1)
     room:notifySkillInvoked(player, self.name)
-    room:delay(2700)
 
     room:throwCard(player:getCardIds(Player.Hand), self.name, player, player)
 
@@ -301,7 +300,7 @@ Fk:loadTranslationTable{
   ["@n_hunyuan"] = "浑元",
   [":n_hunyuan"] = "你造成或受到伤害时，可改变伤害属性。" ..
     "你造成或受到伤害后，记录你造成或受到的这种属性伤害的伤害值，" ..
-    "然后若记录的普、火、雷这三种属性伤害值都相等，" ..
+    "然后若记录的普通伤害→雷属性伤害→火属性伤害这三种属性伤害值成等差数列，" ..
     "你可以摸一张牌并对一名角色造成一点伤害。",
   ["#n_hy-ask"] = "浑元：你可以对一名角色造成一点伤害",
   ["n_toFire"] = "转换成火属性伤害",
@@ -351,7 +350,7 @@ local n_lingxiu = fk.CreateTriggerSkill{
     for _, p in ipairs(room:getOtherPlayers(player)) do
       goal = math.max(goal, p:getHandcardNum())
     end
-    player:drawCards(math.min(goal - player:getHandcardNum(), 5), self.name)
+    player:drawCards(goal - player:getHandcardNum(), self.name)
   end,
 }
 n_qunlingdao:addSkill(n_lingxiu)
@@ -399,7 +398,7 @@ n_qunlingdao:addSkill(n_qunzhi)
 Fk:loadTranslationTable{
   ["n_qunlingdao"] = "群领导",
   ["n_lingxiu"] = "领袖",
-  [":n_lingxiu"] = "锁定技，当你不以此法获得手牌后，将手牌摸至全场最多。（一次最多摸5张）",
+  [":n_lingxiu"] = "锁定技，当你不以此法获得手牌后，将手牌摸至全场最多。",
   ["n_qunzhi"] = "群智",
   [":n_qunzhi"] = "出牌阶段限一次，若你的体力值不超过你的手牌数，" ..
     "你可以将一半的手牌当一张普通锦囊牌（无懈除外）使用。" ..
@@ -817,11 +816,7 @@ local yaoyin = fk.CreateActiveSkill{
 
     room:obtainCard(target.id, card, false, fk.ReasonGive)
 
-    local prev = player:getNextAlive()
-    while prev:getNextAlive() ~= player do
-      prev = prev:getNextAlive()
-    end
-
+    local prev = player:getLastAlive()
     room:swapSeat(prev, target)
 
     local card = Fk:cloneCard("analeptic")
@@ -1009,7 +1004,7 @@ local biancheng = fk.CreateViewAsSkill{
   end,
   view_as = function(self, cards)
     local card = Fk:getCardById(Self:getMark(self.name))
-    if card.suit == Card.Spade then return nil end
+    if Self:getMark("@@n_baogan") == 0 and card.suit == Card.Spade then return nil end
     card = Fk:cloneCard(card.name)
     card.skillName = self.name
     return card
@@ -1026,7 +1021,7 @@ local biancheng = fk.CreateViewAsSkill{
     if not card then return end
     -- 服务器端判断无懈的时候这个pattern是nil。。
     local pat = Fk.currentResponsePattern or "nullification"
-    return card.suit ~= Card.Spade and
+    return (player:getMark("@@n_baogan") == 1 or card.suit ~= Card.Spade) and
       Exppattern:Parse(pat):matchExp(card.name)
   end,
 }
@@ -1058,6 +1053,32 @@ local tiaoshi = fk.CreateActiveSkill{
   end
 }
 notify:addSkill(tiaoshi)
+local baogan = fk.CreateActiveSkill{
+  name = "n_baogan",
+  card_num = 0,
+  target_num = 0,
+  frequency = Skill.Limited,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  card_filter = function() return false end,
+  on_use = function(self, room, effect)
+    room:setPlayerMark(room:getPlayerById(effect.from), "@@n_baogan", 1)
+  end,
+}
+local baogan_refresh = fk.CreateTriggerSkill{
+  name = "#n_baogan_refresh",
+
+  refresh_events = {fk.TurnStart},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:getMark("@@n_baogan") > 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "@@n_baogan", 0)
+  end,
+}
+baogan:addRelatedSkill(baogan_refresh)
+notify:addSkill(baogan)
 Fk:loadTranslationTable{
   ["n_notify"] = "Notify_",
   ["n_biancheng"] = "编程",
@@ -1065,6 +1086,9 @@ Fk:loadTranslationTable{
   ["n_tiaoshi"] = "调试",
   [":n_tiaoshi"] = "出牌阶段，你可以弃置X张牌并摸一张牌。（X为本阶段发动过该技能的次数）",
   ["#n_tiaoshi"] = "调试：弃置 %arg 张牌，然后摸 1 张牌",
+  ["n_baogan"] = "爆肝",
+  ["@@n_baogan"] = "爆肝",
+  [":n_baogan"] = "限定技，出牌阶段，你可以令“编程”变得也可使用打出黑桃牌直到你下回合开始。",
 }
 
 local dj = General(extension, "n_dingzhen", "qun", 4)
@@ -1164,7 +1188,7 @@ local chiyao = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
-    return target ~= player and player:hasSkill(self.name) and
+    return target ~= player and player:hasSkill(self.name) and player:usedSkillTimes(self.name, Player.HistoryTurn) < 2 and
       data.card.is_damage_card and not data.card:isVirtual() and not player:isAllNude()
   end,
   on_cost = function(self, event, target, player, data)
@@ -1218,7 +1242,7 @@ guojicheng:addSkill(rulai)
 Fk:loadTranslationTable{
   ["n_guojicheng"] = "郭继承",
   ["n_chiyao"] = "斥谣",
-  [":n_chiyao"] = "其他角色使用非转化伤害牌时，你可以弃置一张红桃牌" ..
+  [":n_chiyao"] = "每回合限两次，其他角色使用非转化伤害牌时，你可以弃置一张红桃牌" ..
     "令此牌无效，然后你弃置其一张牌。",
   ["#n_chiyao-discard"] = "斥谣: 你可以弃置一张红桃牌令 %arg 无效",
   ["n_rulai"] = "如来",
