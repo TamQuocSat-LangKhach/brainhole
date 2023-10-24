@@ -331,7 +331,7 @@ local huayuan = fk.CreateTriggerSkill{
     room:obtainCard(player, tmp, true)
 
     if #player:getCardIds("he") < 2 then return end
-    local cards = room:askForCard(player, 2, 2, true, self.name, true, nil, "#n_huayuan-give")
+    local cards = room:askForCard(player, 2, 2, true, self.name, false, nil, "#n_huayuan-give")
     table.insertTable(t, cards)
     tmp = Fk:cloneCard 'slash'
     tmp:addSubcards(cards)
