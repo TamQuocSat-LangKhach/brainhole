@@ -1210,4 +1210,32 @@ Fk:loadTranslationTable{
   ["#n_shicha_invoke"] = "是否发动 %src 的技能“失察”，对其可能强中并可能加伤？",
 }
 
+-- 喵
+General(extension, 'q_machao', 'shu', 4).total_hidden = true
+General(extension, 'q_sunshangxiang', 'wu', 3, 3, General.Female).total_hidden = true
+General(extension, 'q_daqiao', 'wu', 3, 3, General.Female).total_hidden = true
+General(extension, 'q_xiaoqiao', 'wu', 3, 3, General.Female).total_hidden = true
+General(extension, 'q_luxun', 'wu', 3).total_hidden = true
+General(extension, 'q_huangyueying', 'shu', 3, 3, General.Female).total_hidden = true
+General(extension, 'q_spsunshangxiang', 'shu', 3, 3, General.Female).total_hidden = true
+General(extension, 'q_wangyi', 'wei', 3, 3, General.Female).total_hidden = true
+General(extension, 'q_guanyinping', 'shu', 3, 3, General.Female).total_hidden = true
+General(extension, 'q_caiwenji', 'qun', 3, 3, General.Female).total_hidden = true
+General(extension, 'q_spdiaochan', 'qun', 3, 3, General.Female).total_hidden = true
+General(extension, 'q_fuhuanghou', 'qun', 3, 3, General.Female).total_hidden = true
+Fk:loadTranslationTable{
+  ['q_machao'] = 'Q马超',
+  ['q_sunshangxiang'] = 'Q香香',
+  ['q_daqiao'] = 'Q大乔',
+  ['q_xiaoqiao'] = 'Q小乔',
+  ['q_luxun'] = 'Q陆逊',
+  ['q_huangyueying'] = 'Q月英',
+  ['q_spsunshangxiang'] = 'Q蜀香',
+  ['q_wangyi'] = 'Q王异',
+  ['q_guanyinping'] = 'Q银屏',
+  ['q_caiwenji'] = 'Q文姬',
+  ['q_spdiaochan'] = 'Q貂蝉',
+  ['q_fuhuanghou'] = 'Q伏后',
+}
+
 return extension
