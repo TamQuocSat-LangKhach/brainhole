@@ -9,7 +9,7 @@ local n_juanlaotrig = fk.CreateTriggerSkill{
   name = "#n_juanlaotrig",
   refresh_events = {fk.CardUseFinished, fk.EventPhaseStart},
   can_refresh = function(self, event, target, player, data)
-    if not (target == player and player:hasSkill(self.name)) then return end
+    if not (target == player and player:hasSkill(self)) then return end
     if event == fk.CardUseFinished then
       return data.card.type == Card.TypeTrick and
         data.card.sub_type ~= Card.SubtypeDelayedTrick and
@@ -61,7 +61,7 @@ local n_yegeng = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and
+    return target == player and player:hasSkill(self) and
       player.phase == Player.Finish
   end,
   on_use = function(self, event, target, player, data)
@@ -74,7 +74,7 @@ local n_yegeng = fk.CreateTriggerSkill{
 
   refresh_events = {fk.EventPhaseStart, fk.CardUseFinished},
   can_refresh = function(self, event, target, player, data)
-    if not (target == player and player:hasSkill(self.name)) then return end
+    if not (target == player and player:hasSkill(self)) then return end
     if event == fk.EventPhaseStart then return player.phase == Player.Finish end
     if event == fk.CardUseFinished then
       return data.card.type == Card.TypeTrick and
@@ -112,7 +112,7 @@ local n_didiao = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.card.type == Card.TypeTrick and
+    return target == player and player:hasSkill(self) and data.card.type == Card.TypeTrick and
       not player:isNude()
   end,
   on_cost = function(self, event, target, player, data)
@@ -190,7 +190,7 @@ local n_hunyuan = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.DamageCaused, fk.DamageInflicted, fk.Damage, fk.Damaged},
   can_trigger = function(self, event, target, player, data)
-    if not (target == player and player:hasSkill(self.name)) then return end
+    if not (target == player and player:hasSkill(self)) then return end
     if event == fk.Damage or event == fk.Damaged then
       return player:getMark("n_hydmg1") - player:getMark("n_hydmg2") ==
         player:getMark("n_hydmg2") - player:getMark("n_hydmg3")
@@ -241,7 +241,7 @@ local n_hunyuan = fk.CreateTriggerSkill{
 
   refresh_events = {fk.Damage, fk.Damaged},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name)
+    return target == player and player:hasSkill(self)
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
@@ -331,7 +331,7 @@ local n_lingxiu = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(self.name) then return end
+    if not player:hasSkill(self) then return end
     local room = player.room
     if #table.filter(room:getOtherPlayers(player), function(p)
       return #p:getCardIds(Player.Hand) > #player:getCardIds(Player.Hand)
@@ -427,7 +427,7 @@ local n_pengji = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(self.name) then return end
+    if not player:hasSkill(self) then return end
     if player:getMark("n_songji-phase") > 0 then return end
 
     for _, move in ipairs(data) do
@@ -485,7 +485,7 @@ local n_songji = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(self.name) then return end
+    if not player:hasSkill(self) then return end
     if player:getMark("n_songji-phase") > 0 then return end
 
     for _, move in ipairs(data) do
@@ -605,7 +605,7 @@ local n_fudu = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(self.name) then return end
+    if not player:hasSkill(self) then return end
     if player:isKongcheng() then return end
 
     local use = data ---@type CardUseStruct
@@ -694,7 +694,7 @@ local n_mingzhe = fk.CreateTriggerSkill{
   anim_type = "defensive",
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self.name) and player.phase == Player.NotActive and
+    if player:hasSkill(self) and player.phase == Player.NotActive and
       player:usedSkillTimes(self.name, Player.HistoryTurn) < 2 then
       self.trigger_times = 0
       for _, move in ipairs(data) do
@@ -741,7 +741,7 @@ local n_daotu = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self.name) then
+    if player:hasSkill(self) then
       local card = data.card
       if card:isVirtual() then return false end
       if data.from == player.id then return end
@@ -835,7 +835,7 @@ local kangkang = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and
+    return target == player and player:hasSkill(self) and
       (data.to == player:getNextAlive() or data.to:getNextAlive() == player) and
       player:usedSkillTimes(self.name, Player.HistoryTurn) < 2
   end,
@@ -877,7 +877,7 @@ local n_suijie = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.TargetConfirmed},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and
+    return target == player and player:hasSkill(self) and
       data.from ~= player.id and
       table.contains(
         { "peach", "analeptic", "amazing_grace", "god_salvation" },
@@ -905,7 +905,7 @@ local n_jujie = fk.CreateTriggerSkill{
   anim_type = "defensive",
   events = {fk.TargetConfirmed, fk.Damaged},
   can_trigger = function(self, event, target, player, data)
-    if not (target == player and player:hasSkill(self.name)) then return end
+    if not (target == player and player:hasSkill(self)) then return end
     if event == fk.TargetConfirmed then
       return data.from ~= player.id and data.card.is_damage_card
     else
@@ -1098,7 +1098,7 @@ local yangwu = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.GamePrepared, fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self.name) then
+    if player:hasSkill(self) then
       return event == fk.GamePrepared or
         (target == player and player.phase == Player.Start)
     end
@@ -1138,7 +1138,7 @@ local chunzhen = fk.CreateTriggerSkill{
   events = {fk.AfterCardTargetDeclared, fk.DamageInflicted},
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    if not (target == player and player:hasSkill(self.name)) then
+    if not (target == player and player:hasSkill(self)) then
       return false
     end
     if event == fk.AfterCardTargetDeclared then
@@ -1188,7 +1188,7 @@ local chiyao = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
-    return target ~= player and player:hasSkill(self.name) and player:usedSkillTimes(self.name, Player.HistoryTurn) < 2 and
+    return target ~= player and player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryTurn) < 2 and
       data.card.is_damage_card and not data.card:isVirtual() and not player:isAllNude()
   end,
   on_cost = function(self, event, target, player, data)
@@ -1220,7 +1220,7 @@ local rulai = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(self.name) then return end
+    if not player:hasSkill(self) then return end
     if data.card.trueName ~= "slash" then return end
     local room = player.room
     local cur = room.logic:getCurrentEvent()
@@ -1301,7 +1301,7 @@ local relxSkill = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and
+    return target == player and player:hasSkill(self) and
       data.card.type ~= Card.TypeEquip and
       data.firstTarget and
       not table.find(player:getCardIds(Player.Hand), function(cid)
