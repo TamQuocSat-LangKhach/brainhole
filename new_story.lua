@@ -866,9 +866,7 @@ local nuzhan = fk.CreateTriggerSkill{
     local slash = Fk:cloneCard 'slash'
     return player:hasSkill(self) and player.phase == Player.NotActive and
       target and target ~= player and
-      target:hasSkill(data) and data.visible and
-      target:getMark("@n_jizhan-turn") > 0 and
-      target:getMark("@n_jizhan-turn") % 6 == 0 and
+      player.room.logic:getCurrentEvent().n_can_jizhan and
       not player:prohibitUse(slash) and
       not player:isProhibited(target, slash)
   end,
@@ -892,11 +890,17 @@ local nuzhan = fk.CreateTriggerSkill{
   can_refresh = function(self, _, target, player, data)
     return player:hasSkill(self) and player.phase == Player.NotActive and
       target and target ~= player and
-      target:hasSkill(data) and data.visible
+      target:hasSkill(data) and data.visible and
+      not player.room.logic:getCurrentEvent().n_jizhan_counted
   end,
   on_refresh = function(self, _, target, _, _)
     local room = target.room
+    local cur = room.logic:getCurrentEvent()
+    cur.n_jizhan_counted = true
     room:addPlayerMark(target, "@n_jizhan-turn", 1)
+    if (target:getMark("@n_jizhan-turn") % 6 == 0) then
+      cur.n_can_jizhan = true
+    end
   end,
 }
 xuchu:addSkill(nuzhan)
