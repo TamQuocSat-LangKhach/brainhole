@@ -863,11 +863,14 @@ local nuzhan = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.AfterSkillEffect},
   can_trigger = function(self, _, target, player, data)
+    local slash = Fk:cloneCard 'slash'
     return player:hasSkill(self) and player.phase == Player.NotActive and
       target and target ~= player and
       target:hasSkill(data) and data.visible and
       target:getMark("@n_jizhan-turn") > 0 and
-      target:getMark("@n_jizhan-turn") % 6 == 0
+      target:getMark("@n_jizhan-turn") % 6 == 0 and
+      not player:prohibitUse(slash) and
+      not player:isProhibited(target, slash)
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, data, "#n_jizhan-invoke::"..target.id)
