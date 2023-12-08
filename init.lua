@@ -1273,6 +1273,7 @@ local brickSkill = fk.CreateActiveSkill{
     local from = room:getPlayerById(effect.from)
     local to = room:getPlayerById(effect.to)
 
+    room:addPlayerMark(from, "n_brick-round", 1)
     room:obtainCard(to, effect.card, true, fk.ReasonGive)
 
     room:damage({
@@ -1285,6 +1286,14 @@ local brickSkill = fk.CreateActiveSkill{
     })
   end
 }
+local brickProhibit = fk.CreateProhibitSkill{
+  name = "#n_brick_prohibit",
+  global = true, -- FIXME
+  prohibit_use = function(self, player, card)
+    return player:getMark("n_brick-round") > 0 and card.name == "n_brick"
+  end,
+}
+Fk:addSkill(brickProhibit)
 local brick = fk.CreateBasicCard{
   name = "n_brick",
   number = 6,
@@ -1333,7 +1342,7 @@ Fk:loadTranslationTable{
   [":n_brick"] = "基本牌<br />" ..
     "<b>时机</b>：出牌阶段<br />" ..
     "<b>目标</b>：攻击范围内的一名其他角色<br />" ..
-    "<b>效果</b>：交给其此牌，对目标角色造成1点伤害。",
+    "<b>效果</b>：交给其此牌，对目标角色造成1点伤害，然后本轮不能再使用【砖】。",
 
   ["n_relx_v"] = "悦刻五",
   [":n_relx_v"] = "装备牌·宝物<br />" ..
