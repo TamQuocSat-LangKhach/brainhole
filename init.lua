@@ -735,6 +735,101 @@ Fk:loadTranslationTable{
   [":n_mingzhe"] = "每回合限两次，当你于回合外使用、打出或因弃置而失去一张红色牌时，你可以摸一张牌。",
 }
 
+local xxyheaven = General(extension, "n_xxyheaven", "wu", 3)
+xxyheaven.gender = General.Female
+local kaoda = fk.CreateActiveSkill{
+  name = "n_kaoda",
+  anim_type = "offensive",
+  prompt = "#n_kaoda-active",
+  max_card_num = 0,
+  target_num = 1,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function() return false end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    player:drawCards(1, self.name)
+    room:addPlayerMark(target, "@@n_kaoda-turn")
+    player:control(target)
+  end,
+}
+local kaoda_delay = fk.CreateTriggerSkill{
+  name = "#n_kaoda_delay",
+  refresh_events = {fk.AfterTurnEnd, fk.EnterDying},
+  mute = true,
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.EnterDying then
+      return true
+    end
+    return target == player
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    for _, p in ipairs(room.alive_players) do
+      if p:getMark("@@n_kaoda-turn") > 0 then
+        p:control(p)
+      end
+    end
+  end,
+}
+kaoda:addRelatedSkill(kaoda_delay)
+xxyheaven:addSkill(kaoda)
+local chonggou = fk.CreateTriggerSkill{
+  name = "n_chonggou",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Finish
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    for _, p in ipairs(room.alive_players) do
+      if p:getMark("@@n_kaoda-turn") > 0 then
+        p:drawCards(3, self.name)
+        room:askForDiscard(p, 3, 3, true, self.name, false)
+      end
+    end
+    player:drawCards(3, self.name)
+    room:askForDiscard(player, 3, 3, true, self.name, false)
+  end,
+}
+xxyheaven:addSkill(chonggou)
+local kuiping = fk.CreateTriggerSkill{
+  name = 'n_kuiping',
+  frequency = Skill.Compulsory,
+  refresh_events = {fk.EventAcquireSkill, fk.EventLoseSkill},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and data == self
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    local victim = table.find(room.players, function(p) return p.seat == 1 end)
+    if not victim then return end
+    if event == fk.EventAcquireSkill then
+      player:addBuddy(victim)
+    elseif event == fk.EventAcquireSkill then
+      player:removeBuddy(victim)
+    end
+  end,
+}
+xxyheaven:addSkill(kuiping)
+Fk:loadTranslationTable{
+  ["n_xxyheaven"] = "心变",
+  ["n_kaoda"] = "拷打",
+  [":n_kaoda"] = "出牌阶段限一次，你可以摸一张牌并控制一名其他角色，直到回合结束或有角色进入濒死阶段。",
+  ["n_chonggou"] = "重构",
+  [":n_chonggou"] = "结束阶段，你可以摸三张牌并弃三张牌，若本回合有被拷打的角色，其先执行此效果。",
+  ["n_kuiping"] = "窥屏",
+  [":n_kuiping"] = "锁定技，一号位获得的牌对你可见。",
+
+  ["#n_kaoda-active"] = "拷打：控制一名其他角色",
+  ["@@n_kaoda-turn"] = "被拷打",
+}
+
 local n_daotuwang = General(extension, "n_daotuwang", "qun", 3)
 local n_daotu = fk.CreateTriggerSkill{
   name = "n_daotu",
