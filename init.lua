@@ -4,6 +4,8 @@ Fk:loadTranslationTable{
   ["brainhole"] = "脑洞包",
 }
 
+local U = require "packages/utility/utility"
+
 local n_zy = General(extension, "n_zy", "n_pigeon", 3)
 local n_juanlaotrig = fk.CreateTriggerSkill{
   name = "#n_juanlaotrig",
@@ -643,7 +645,105 @@ Fk:loadTranslationTable{
   ["#n_tuguo-active"] = "图国: 你可以对自己造成1伤害，然后拿国战牌或标记",
   ["#n_niuzhi-ask"] = "牛智: 你可以对 %src 发起“军令”，若其不执行你回血",
 }
+--[[
+local ralphr = General(extension, "n_ralphr", "n_pigeon", 3)
+local n_subian = fk.CreateActiveSkill{
+  name = "n_subian",
+  anim_type = "drawcard",
+  card_num = 1,
+  target_num = 0,
+  prompt = function() return "#n_subian" end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
+  end,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng()
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local card = Fk:getCardById(effect.cards[1])
+    local toGain = room:printCard(card.name, card.suit, card.number)
+    room:obtainCard(player, toGain, true, fk.ReasonPrey)
+    room:setCardMark(toGain, "@@n_subian", 1)
+    local mark = U.getMark(player, "n_subian")
+    table.insert(mark, toGain.id)
+    room:setPlayerMark(player, "n_subian", mark)
+  end,
+}
+ralphr:addSkill(n_subian)
+local n_rigeng = fk.CreateTriggerSkill{
+  name = "n_rigeng",
+  anim_type = "control",
+  events = {fk.EventPhaseEnd},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) and player == target and player.phase == Player.Play then
+      return #player.room.logic:getEventsOfScope(GameEvent.UseCard, 999, function (e)
+        return e.data[1].from == player.id
+      end, Player.HistoryPhase) >= (3 + player:usedSkillTimes(self.name, Player.HistoryTurn))
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    player:gainAnExtraPhase(Player.Play)
+  end,
 
+  refresh_events = {fk.EventPhaseStart, fk.AfterCardUseDeclared},
+  can_refresh = function (self, event, target, player, data)
+    return player:hasSkill(self,true) and player.phase == Player.Play
+  end,
+  on_refresh = function (self, event, target, player, data)
+    local room = player.room
+    local num = #room.logic:getEventsOfScope(GameEvent.UseCard, 999, function (e)
+      return e.data[1].from == player.id
+    end, Player.HistoryPhase)
+    room:setPlayerMark(player, "@n_rigeng-phase", num.."/"..(3 + player:usedSkillTimes(self.name, Player.HistoryTurn)))
+  end,
+}
+ralphr:addSkill(n_rigeng)
+local n_fanxiu = fk.CreateActiveSkill{
+  name = "n_fanxiu",
+  anim_type = "drawcard",
+  card_num = 0,
+  target_num = 0,
+  card_filter = Util.FalseFunc,
+  frequency = Skill.Limited,
+  prompt = function() return "#n_fanxiu" end,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local ids = U.getMark(player, "n_subian")
+    for i = #ids , 1, -1 do
+      local id = ids[i]
+      if room:getCardArea(id) ~= Card.DiscardPile and room:getCardArea(id) ~= Card.DrawPile then
+        table.remove(ids, i)
+      end
+    end
+    if #ids > 0 then
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(ids)
+      room:obtainCard(player, dummy, false, fk.ReasonPrey)
+    end
+  end,
+}
+ralphr:addSkill(n_fanxiu)
+Fk:loadTranslationTable{
+  ["n_ralphr"] = "RalphR_",
+  ["n_subian"] = "速编",
+  [":n_subian"] = "出牌阶段限一次，你可以获得一张手牌的复制牌。",
+  ["#n_subian"] = "速编：获得一张手牌的复制",
+  ["@@n_subian"] = "速编",
+  ["n_rigeng"] = "日更",
+  [":n_rigeng"] = "锁定技，出牌阶段结束后，若你本阶段使用过至少3+X张牌，你执行一个额外的出牌阶段（X为本回合已发动过本技能的次数）。",
+  ["@n_rigeng-phase"] = "日更",
+  ["n_fanxiu"] = "翻修",
+  [":n_fanxiu"] = "限定技，出牌阶段，你可以获得牌堆和弃牌堆中所有通过〖速编〗复制出来的卡牌。",
+  ["#n_fanxiu"] = "翻修：获得牌堆和弃牌堆中所有通过〖速编〗复制出来的卡牌",
+  ["$n_fanxiu1"] = "待补充",
+  ["$n_fanxiu2"] = "待补充",
+}
+--]]
 local notify = General(extension, "n_notify", "n_pigeon", 3)
 local bianchengTrig = fk.CreateTriggerSkill{
   name = "#n_biancheng_trig",
