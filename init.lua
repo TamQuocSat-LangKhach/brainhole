@@ -4,7 +4,7 @@ Fk:loadTranslationTable{
   ["brainhole"] = "脑洞包",
 }
 
-local n_zy = General(extension, "n_zy", "qun", 3)
+local n_zy = General(extension, "n_zy", "n_pigeon", 3)
 local n_juanlaotrig = fk.CreateTriggerSkill{
   name = "#n_juanlaotrig",
   refresh_events = {fk.CardUseFinished, fk.EventPhaseStart},
@@ -106,7 +106,7 @@ Fk:loadTranslationTable{
     "你进行一个额外的回合，否则你摸一张牌。（X为你本轮内发动过该技能的次数）",
 }
 
-local n_wch = General(extension, "n_wch", "qun", 3)
+local n_wch = General(extension, "n_wch", "n_pigeon", 3)
 local n_didiao = fk.CreateTriggerSkill{
   name = "n_didiao",
   anim_type = "drawcard",
@@ -183,7 +183,7 @@ Fk:loadTranslationTable{
   [":n_shenjiao"] = "出牌阶段，你可以弃置一枚“饺”标记并摸两张牌；一名其他角色进入濒死状态时，你可以弃置一枚“饺”标记，令其回复一点体力。",
 }
 
-local n_qunlingdao = General(extension, "n_qunlingdao", "qun", 3)
+local n_qunlingdao = General(extension, "n_qunlingdao", "n_pigeon", 3)
 local n_lingxiu = fk.CreateTriggerSkill{
   name = "n_lingxiu",
   anim_type = "drawcard",
@@ -269,7 +269,7 @@ Fk:loadTranslationTable{
   ["$n_qunzhi2"] = "群众的智慧是无穷的！",
 }
 
-local n_hospair = General(extension, "n_hospair", "qun", 3)
+local n_hospair = General(extension, "n_hospair", "n_pigeon", 3)
 n_hospair.gender = General.Female
 -- n_hospair.hidden = true
 -- n_hospair.total_hidden = true
@@ -408,7 +408,7 @@ Fk:loadTranslationTable{
   [":n_mingzhe"] = "每回合限两次，当你于回合外使用、打出或因弃置而失去一张红色牌时，你可以摸一张牌。",
 }
 
-local xxyheaven = General(extension, "n_xxyheaven", "wu", 3)
+local xxyheaven = General(extension, "n_xxyheaven", "n_pigeon", 3)
 xxyheaven.gender = General.Female
 local kaoda = fk.CreateActiveSkill{
   name = "n_kaoda",
@@ -503,7 +503,7 @@ Fk:loadTranslationTable{
   ["@@n_kaoda-turn"] = "被拷打",
 }
 
-local n_daotuwang = General(extension, "n_daotuwang", "qun", 3)
+local n_daotuwang = General(extension, "n_daotuwang", "n_pigeon", 3)
 local n_daotu = fk.CreateTriggerSkill{
   name = "n_daotu",
   anim_type = "drawcard",
@@ -550,7 +550,7 @@ Fk:loadTranslationTable{
 }
 
 local H = require 'packages/hegemony/util'
-local nyutan = General(extension, "n_nyutan", "qun", 3)
+local nyutan = General(extension, "n_nyutan", "n_pigeon", 3)
 nyutan.gender = General.Agender
 nyutan:addCompanions{ "os__niujin", "niufu" }
 local tuguo_choices = {
@@ -642,14 +642,9 @@ Fk:loadTranslationTable{
   [":n_niuzhi"] = "当你受到伤害后，你可以对伤害来源发起一次“军令”，若其不执行，你回复一点体力，否则你本阶段不能再发动此技能。",
   ["#n_tuguo-active"] = "图国: 你可以对自己造成1伤害，然后拿国战牌或标记",
   ["#n_niuzhi-ask"] = "牛智: 你可以对 %src 发起“军令”，若其不执行你回血",
-
-  -- TODO: move
-  ["vanguard"] = "先驱",
-  ["yinyangfish"] = "阴阳鱼",
-  ["companion"] = "珠联璧合",
 }
 
-local notify = General(extension, "n_notify", "qun", 3)
+local notify = General(extension, "n_notify", "n_pigeon", 3)
 local bianchengTrig = fk.CreateTriggerSkill{
   name = "#n_biancheng_trig",
   refresh_events = {fk.AfterCardsMove},
