@@ -608,7 +608,6 @@ local tuguo = fk.CreateActiveSkill{
     end
   end,
 }
-nyutan:addSkill(tuguo)
 local niuzhi = fk.CreateTriggerSkill {
   name = "n_niuzhi",
   anim_type = "defensive",
@@ -636,12 +635,26 @@ local niuzhi = fk.CreateTriggerSkill {
   end,
 }
 nyutan:addSkill(niuzhi)
+nyutan:addSkill(tuguo)
 Fk:loadTranslationTable{
   ["n_nyutan"] = "Nyutan_",
   ["n_tuguo"] = "图国",
-  [":n_tuguo"] = "出牌阶段限一次，你可以对自己造成1点伤害，然后获得一张国战锦囊或一枚国战标记（每种牌名/标记限两次，获得卡牌的花色点数随机）。",
+  [":n_tuguo"] = "出牌阶段限一次，你可以对自己造成1点伤害，然后获得一张国战锦囊或一枚国战标记（每种牌名/标记限两次，获得卡牌的花色点数随机）。<br/>" ..
+  "<font color='grey'><small><b>国战锦囊</b>：<br/><b>知己知彼</b>：出牌阶段，选择势力与你不同的一名角色，其摸一张牌，你摸三张牌。<br/>" ..
+  "<b>知己知彼</b>：出牌阶段，选择一名其他角色，观看其手牌<s>或一张暗置的武将牌</s>。<br/>" ..
+  "<b>以逸待劳</b>：出牌阶段，你和与你势力相同的角色各摸两张牌，然后弃置两张牌。<br/>" ..
+  "<b>火烧连营</b>：出牌阶段，对你的下家和与其同一<u>队列</u>（相邻、势力相同）的所有角色各造成1点火焰伤害。<br/>" ..
+  "<b>调虎离山</b>：出牌阶段，选择一至两名其他角色，这些角色于此回合内不计入距离和座次的计算，且不能使用牌，且不是牌的合法目标，且体力值不会改变。<br/>" ..
+  "<b>勠力同心</b>：出牌阶段，选择所有<u>大势力</u>（角色数最多的势力）角色或<u>小势力</u>（角色数不是最多的势力）角色，若这些角色处于/不处于连环状态，其摸一张牌/横置。<br/>" ..
+  "<b>联军盛宴</b>：选择除你的势力外的一个势力的所有角色，对你和这些角色使用，你选择X（不大于Y），摸X张牌，回复Y-X点体力（Y为该势力的角色数）；这些角色各摸一张牌，重置。<br/>" ..
+  "<b>挟天子以令诸侯</b>：出牌阶段，若你为<u>大势力角色</u>，对你使用，你结束出牌阶段，此回合弃牌阶段结束时，你可弃置一张手牌，然后获得一个额外回合。<br/>" ..
+  "<b>国战标记</b>：<br/><b>先驱</b>：出牌阶段，你可弃一枚“先驱”，将手牌摸至4张<s>，观看一名其他角色的一张暗置武将牌</s>。<br/>" ..
+  "<b>阴阳鱼</b>：①出牌阶段，你可弃一枚“阴阳鱼”，摸一张牌；②弃牌阶段开始时，你可弃一枚“阴阳鱼”，此回合手牌上限+2。<br/>" ..
+  "<b>珠联璧合</b>：①出牌阶段，你可弃一枚“珠联璧合”，摸两张牌；②你可弃一枚“珠联璧合”，视为使用【桃】。<br/>" ..
+  "<b>野心家</b>：你可将一枚“野心家”当以上三种中任意一种标记弃置并执行其效果。</small></font>",
   ["n_niuzhi"] = "牛智",
-  [":n_niuzhi"] = "当你受到伤害后，你可以对伤害来源发起一次“军令”，若其不执行，你回复一点体力，否则你本阶段不能再发动此技能。",
+  [":n_niuzhi"] = "当你受到伤害后，你可以对伤害来源发起一次“军令”，若其不执行，你回复一点体力，否则你本阶段不能再发动此技能。<br/>" ..
+  "<font color='grey'><small><b>军令</b>：<u>发起军令的角色</u>随机获得两张军令牌，然后选择其中一张。<u>执行军令的角色</u>选择是否执行该“军令”。。</small></font>",
   ["#n_tuguo-active"] = "图国: 你可以对自己造成1伤害，然后拿国战牌或标记",
   ["#n_niuzhi-ask"] = "牛智: 你可以对 %src 发起“军令”，若其不执行你回血",
 }
@@ -1547,23 +1560,31 @@ local extension_card = Package("brainhole_cards", Package.CardPack)
 
 local brickSkill = fk.CreateActiveSkill{
   name = "n_brick_skill",
+  max_round_use_time = 1,
+  can_use = function(self, player, card)
+    return table.find(Fk:currentRoom().alive_players, function(p)
+      return self:withinTimesLimit(player, Player.HistoryRound, card, "n_brick", p)
+    end)
+  end,
   target_num = 1,
+  mod_target_filter = function(self, to_select, selected, user, card, distance_limited)
+    local player = Fk:currentRoom():getPlayerById(to_select)
+    local from = Fk:currentRoom():getPlayerById(user)
+    return from ~= player and not (distance_limited and not self:withinDistanceLimit(from, true, card, player))
+  end,
   target_filter = function(self, to_select, selected, _, card)
     if #selected < self:getMaxTargetNum(Self, card) then
       local player = Fk:currentRoom():getPlayerById(to_select)
-      return Self ~= player and
-        (self:getDistanceLimit(Self, card) -- for no distance limit for slash
-        + Self:getAttackRange()
-        >= Self:distanceTo(player))
+      return self:modTargetFilter(to_select, selected, Self.id, card, true) and
+      (#selected > 0 or self:withinTimesLimit(Self, Player.HistoryRound, card, "n_brick", player))
     end
   end,
   on_effect = function(self, room, effect)
     local from = room:getPlayerById(effect.from)
     local to = room:getPlayerById(effect.to)
 
-    room:addPlayerMark(from, "n_brick-round", 1)
     room:obtainCard(to, effect.card, true, fk.ReasonGive)
-
+    if to.dead then return false end
     room:damage({
       from = from,
       to = to,
@@ -1574,14 +1595,6 @@ local brickSkill = fk.CreateActiveSkill{
     })
   end
 }
-local brickProhibit = fk.CreateProhibitSkill{
-  name = "#n_brick_prohibit",
-  global = true, -- FIXME
-  prohibit_use = function(self, player, card)
-    return player:getMark("n_brick-round") > 0 and card.name == "n_brick"
-  end,
-}
-Fk:addSkill(brickProhibit)
 local brick = fk.CreateBasicCard{
   name = "n_brick",
   number = 6,
