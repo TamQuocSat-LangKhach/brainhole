@@ -6,6 +6,10 @@ Fk:loadTranslationTable{
 
 local U = require "packages/utility/utility"
 
+Fk:loadTranslationTable{
+  ["n_pigeon"] = "鸽",
+}
+
 local n_zy = General(extension, "n_zy", "n_pigeon", 3)
 local n_juanlaotrig = fk.CreateTriggerSkill{
   name = "#n_juanlaotrig",
@@ -286,46 +290,23 @@ local n_fudu = fk.CreateTriggerSkill{
     local use = data ---@type CardUseStruct
     local card = use.card
     if not (use.from ~= player.id and
-      use.tos and #use.tos == 1 and
+      use.tos and
       (not card:isVirtual()) and
-      (card.type == Card.TypeBasic or
-       (card.type == Card.TypeTrick and card.sub_type ~= Card.SubtypeDelayedTrick)
+      (card.type == Card.TypeBasic or card:isCommonTrick()
     )) then
 
       return
     end
-
+    local tos = TargetGroup:getRealTargets(data.tos)
+    if #table.filter(player.room.alive_players, function(p) return table.contains(tos, p.id) end) ~= 1 then return end
     local room = player.room
     local target = use.tos[1][1] == player.id
       and room:getPlayerById(use.from)
       or room:getPlayerById(use.tos[1][1])
-
-    -- if not table.find(player:getCardIds(Player.Hand), function(id)
-    --   return Fk:getCardById(id).color == card.color
-    -- end) then
-
-    --   return
-    -- end
-
-
-    if target.dead or player:prohibitUse(use.card)
-      or player:isProhibited(target, use.card) then
-
+    if target.dead then
       return
     end
-
-    -- TODO: fix this
-    if card.name == "peach" then
-      return target:isWounded()
-    elseif card.name == "snatch" or card.name == "dismantlement" then
-      return not target:isAllNude()
-    elseif card.name == "fire_attack" then
-      return not target:isKongcheng()
-    elseif card.name == "collateral" then
-      return target:getEquipment(Card.SubtypeWeapon) ~= nil
-    end
-
-    return true
+    return U.canUseCardTo(room, player, target, card, false, false)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -335,12 +316,12 @@ local n_fudu = fk.CreateTriggerSkill{
       or room:getPlayerById(use.tos[1][1])
 
     local ids = table.filter(player:getCardIds(Player.Hand), function(id)
-      return Fk:getCardById(id).color == use.card.color
+      return use.card:compareColorWith(Fk:getCardById(id))
     end)
 
     local c = room:askForCard(player, 1, 1, false, self.name, true,
       tostring(Exppattern{ id = ids }),
-      "@n_fudu::" .. target.id .. ":" .. use.card.name)[1]
+      "@n_fudu::" .. target.id .. ":" .. use.card.name .. ":" .. use.card:getColorString())[1]
 
     if c then
       self.cost_data = c
@@ -367,29 +348,43 @@ n_hospair:addSkill(n_fudu)
 local n_mingzhe = fk.CreateTriggerSkill{
   name = "n_mingzhe",
   anim_type = "defensive",
-  events = {fk.AfterCardsMove},
+  events = {fk.CardUsing, fk.CardResponding, fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and player.phase == Player.NotActive and
-      player:usedSkillTimes(self.name, Player.HistoryTurn) < 2 then
-      self.trigger_times = 0
+    if not (player:hasSkill(self) and player.phase == Player.NotActive and player:usedSkillTimes(self.name, Player.HistoryTurn) < 2) then return end
+    self.cost_data = 0
+    if event == fk.AfterCardsMove then
       for _, move in ipairs(data) do
-        if move.from == player.id and (move.moveReason == fk.ReasonUse or move.moveReason == fk.ReasonResonpse or move.moveReason == fk.ReasonDiscard) then
-          for _, info in ipairs(move.moveInfo) do
-            if Fk:getCardById(info.cardId).color == Card.Red then
-              self.trigger_times = self.trigger_times + 1
-            end
+      if move.from == player.id and move.moveReason == fk.ReasonDiscard then
+        for _, info in ipairs(move.moveInfo) do
+          if (info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip) and
+          Fk:getCardById(info.cardId).color == Card.Red then
+            self.cost_data = self.cost_data + 1
           end
         end
       end
-      return self.trigger_times > 0
     end
+    else
+      if (player == target and data.card.color == Card.Red) then self.cost_data = self.cost_data + 1 end
+    end
+    return self.cost_data > 0
   end,
   on_trigger = function(self, event, target, player, data)
+    local x = self.cost_data
     local ret
-    for i = 1, self.trigger_times do
+    for _ = 1, x do
+      if self.cancel_cost or not player:hasSkill(self) or player:usedSkillTimes(self.name, Player.HistoryTurn) >= 2 then
+        self.cancel_cost = false
+        break
+      end
       ret = self:doCost(event, target, player, data)
       if ret then return ret end
     end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if player.room:askForSkillInvoke(player, self.name, data) then
+      return true
+    end
+    self.cancel_cost = true
   end,
   on_use = function(self, event, target, player, data)
     player:drawCards(1, self.name)
@@ -404,8 +399,8 @@ Fk:loadTranslationTable{
   ["$n_fudu"] = "加一",
   [":n_fudu"] = "其他角色的指定唯一目标的非转化的基本牌或者普通锦囊牌结算完成后: <br/>" ..
   "① 若你是唯一目标，你可以将颜色相同的一张手牌当做此牌对使用者使用。（无视距离）<br/>" ..
-  "② 若你不是唯一目标，你可以将颜色相同的一张手牌当做此牌对那名唯一目标使用。（无视距离）",
-  ["@n_fudu"] = "复读：你现在可以将一张手牌当做 %arg 对 %dest 使用",
+  "② 若你不是唯一目标，你可以将颜色相同的一张手牌当做此牌对目标角色使用。（无视距离）",
+  ["@n_fudu"] = "复读：你可以将一张%arg2手牌当做【%arg】对 %dest 使用",
   ["n_mingzhe"] = "明哲",
   [":n_mingzhe"] = "每回合限两次，当你于回合外使用、打出或因弃置而失去一张红色牌时，你可以摸一张牌。",
 }
@@ -659,8 +654,8 @@ Fk:loadTranslationTable{
   ["#n_niuzhi-ask"] = "牛智: 你可以对 %src 发起“军令”，若其不执行你回血",
 }
 
-local ralphr = General(extension, "n_ralph", "n_pigeon", 3)
-nyutan.gender = General.Female
+local ralph = General(extension, "n_ralph", "n_pigeon", 3)
+ralph.gender = General.Female
 local n_subian = fk.CreateActiveSkill{
   name = "n_subian",
   anim_type = "drawcard",
@@ -684,7 +679,7 @@ local n_subian = fk.CreateActiveSkill{
     room:setPlayerMark(player, "n_subian-turn", mark)
   end,
 }
-ralphr:addSkill(n_subian)
+ralph:addSkill(n_subian)
 local n_rigeng = fk.CreateTriggerSkill{
   name = "n_rigeng",
   anim_type = "offensive",
@@ -703,7 +698,7 @@ local n_rigeng = fk.CreateTriggerSkill{
 
   refresh_events = {fk.EventPhaseStart, fk.AfterCardUseDeclared},
   can_refresh = function (self, event, target, player, data)
-    return player:hasSkill(self,true) and player.phase == Player.Play
+    return player:hasSkill(self, true) and player.phase == Player.Play
   end,
   on_refresh = function (self, event, target, player, data)
     local room = player.room
@@ -713,7 +708,7 @@ local n_rigeng = fk.CreateTriggerSkill{
     room:setPlayerMark(player, "@n_rigeng-phase", num.."/"..(3 + player:usedSkillTimes(self.name, Player.HistoryTurn)))
   end,
 }
-ralphr:addSkill(n_rigeng)
+ralph:addSkill(n_rigeng)
 local n_fanxiu = fk.CreateActiveSkill{
   name = "n_fanxiu",
   anim_type = "drawcard",
@@ -741,7 +736,7 @@ local n_fanxiu = fk.CreateActiveSkill{
     end
   end,
 }
-ralphr:addSkill(n_fanxiu)
+ralph:addSkill(n_fanxiu)
 Fk:loadTranslationTable{
   ["n_ralph"] = "Ｒ神",
   ["n_subian"] = "速编",
@@ -1393,6 +1388,7 @@ Fk:loadTranslationTable{
 }
 
 local dj = General(extension, "n_dingzhen", "qun", 4)
+local relx = { {"n_relx_v", Card.Spade, 12} }
 local yangwu = fk.CreateTriggerSkill{
   name = "n_yangwu",
   anim_type = "offensive",
@@ -1408,21 +1404,18 @@ local yangwu = fk.CreateTriggerSkill{
     local room = player.room
     local treasure = player:getEquipment(Card.SubtypeTreasure)
     if not treasure or Fk:getCardById(treasure).name ~= "n_relx_v" then
-      for _, id in ipairs(Fk:getAllCardIds()) do
-        if Fk:getCardById(id, true).name == "n_relx_v" then
-          local owner = room:getCardOwner(id)
-          room:obtainCard(player.id, id, false, fk.ReasonPrey)
-          if owner and owner ~= player then
-            room:damage { from = player, to = owner, damage = 1 }
-          end
-          room:useCard({
-            from = player.id,
-            tos = {{player.id}},
-            card = Fk:getCardById(id, true),
-          })
-
-          break
-        end
+      local id = U.prepareDeriveCards(player.room, relx, "yangwu_derivedcards")[1]
+      local owner = room:getCardOwner(id)
+      room:obtainCard(player.id, id, false, fk.ReasonPrey)
+      if owner and owner ~= player and not owner.dead then
+        room:damage { from = player, to = owner, damage = 1 }
+      end
+      if not player.dead then
+        room:useCard({
+          from = player.id,
+          tos = { {player.id} },
+          card = Fk:getCardById(id, true),
+        })
       end
     elseif Fk:getCardById(treasure).name == "n_relx_v" then
       if not player:isKongcheng() then
