@@ -553,7 +553,7 @@ Fk:loadTranslationTable{
 
 local H = require 'packages/hegemony/util'
 local nyutan = General(extension, "n_nyutan", "n_pigeon", 3)
-nyutan.gender = General.Agender
+nyutan.gender = General.Female
 nyutan:addCompanions{ "os__niujin", "niufu" }
 local tuguo_choices = {
   -- 卡牌们
@@ -645,8 +645,9 @@ Fk:loadTranslationTable{
   ["#n_tuguo-active"] = "图国: 你可以对自己造成1伤害，然后拿国战牌或标记",
   ["#n_niuzhi-ask"] = "牛智: 你可以对 %src 发起“军令”，若其不执行你回血",
 }
---[[
-local ralphr = General(extension, "n_ralphr", "n_pigeon", 3)
+
+local ralphr = General(extension, "n_ralph", "n_pigeon", 3)
+nyutan.gender = General.Female
 local n_subian = fk.CreateActiveSkill{
   name = "n_subian",
   anim_type = "drawcard",
@@ -664,16 +665,16 @@ local n_subian = fk.CreateActiveSkill{
     local card = Fk:getCardById(effect.cards[1])
     local toGain = room:printCard(card.name, card.suit, card.number)
     room:obtainCard(player, toGain, true, fk.ReasonPrey)
-    room:setCardMark(toGain, "@@n_subian", 1)
-    local mark = U.getMark(player, "n_subian")
+    -- room:setCardMark(toGain, "@@n_subian", 1)
+    local mark = U.getMark(player, "n_subian-turn")
     table.insert(mark, toGain.id)
-    room:setPlayerMark(player, "n_subian", mark)
+    room:setPlayerMark(player, "n_subian-turn", mark)
   end,
 }
 ralphr:addSkill(n_subian)
 local n_rigeng = fk.CreateTriggerSkill{
   name = "n_rigeng",
-  anim_type = "control",
+  anim_type = "offensive",
   events = {fk.EventPhaseEnd},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
@@ -713,7 +714,7 @@ local n_fanxiu = fk.CreateActiveSkill{
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    local ids = U.getMark(player, "n_subian")
+    local ids = U.getMark(player, "n_subian-turn")
     for i = #ids , 1, -1 do
       local id = ids[i]
       if room:getCardArea(id) ~= Card.DiscardPile and room:getCardArea(id) ~= Card.DrawPile then
@@ -729,21 +730,18 @@ local n_fanxiu = fk.CreateActiveSkill{
 }
 ralphr:addSkill(n_fanxiu)
 Fk:loadTranslationTable{
-  ["n_ralphr"] = "RalphR_",
+  ["n_ralph"] = "Ｒ神",
   ["n_subian"] = "速编",
   [":n_subian"] = "出牌阶段限一次，你可以获得一张手牌的复制牌。",
   ["#n_subian"] = "速编：获得一张手牌的复制",
-  ["@@n_subian"] = "速编",
   ["n_rigeng"] = "日更",
   [":n_rigeng"] = "锁定技，出牌阶段结束后，若你本阶段使用过至少3+X张牌，你执行一个额外的出牌阶段（X为本回合已发动过本技能的次数）。",
   ["@n_rigeng-phase"] = "日更",
   ["n_fanxiu"] = "翻修",
-  [":n_fanxiu"] = "限定技，出牌阶段，你可以获得牌堆和弃牌堆中所有通过〖速编〗复制出来的卡牌。",
-  ["#n_fanxiu"] = "翻修：获得牌堆和弃牌堆中所有通过〖速编〗复制出来的卡牌",
-  ["$n_fanxiu1"] = "待补充",
-  ["$n_fanxiu2"] = "待补充",
+  [":n_fanxiu"] = "限定技，出牌阶段，你可以获得本回合牌堆和弃牌堆中所有通过〖速编〗复制出来的卡牌。",
+  ["#n_fanxiu"] = "翻修：获得本回合牌堆和弃牌堆中所有通过〖速编〗复制出来的卡牌",
 }
---]]
+
 local notify = General(extension, "n_notify", "n_pigeon", 3)
 local bianchengTrig = fk.CreateTriggerSkill{
   name = "#n_biancheng_trig",
