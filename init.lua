@@ -20,8 +20,8 @@ local n_juanlaotrig = fk.CreateTriggerSkill{
       return data.card.type == Card.TypeTrick and
         data.card.sub_type ~= Card.SubtypeDelayedTrick and
         (not data.card:isVirtual()) and
-        player.phase ~= Player.NotActive and
-        player:usedSkillTimes("n_juanlao", Player.HistoryPhase) == 0
+        player.phase ~= Player.NotActive --and
+        -- player:usedSkillTimes("n_juanlao", Player.HistoryPhase) == 0
     else
       return player.phase == Player.Finish
     end
