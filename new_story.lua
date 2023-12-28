@@ -1072,13 +1072,13 @@ local kuangle = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local mark = player:getMark("@n_kuangle")
+    local mark = player:getMark("@[suits]n_kuangle")
     if mark == 0 then mark = {} end
 
-    local suit = data.card:getSuitString(true)
+    local suit = data.card.suit
     if not table.contains(mark, suit) then
       table.insert(mark, suit)
-      room:setPlayerMark(player, "@n_kuangle", mark)
+      room:setPlayerMark(player, "@[suits]n_kuangle", mark)
       player:drawCards(1, self.name)
     else
       local choices = { 'n_kuangle-disresponsive' }
@@ -1142,9 +1142,9 @@ local shichaProhibit = fk.CreateProhibitSkill{
 
     if player:getMark("n_shicha") == 0 then return false end
 
-    local suits = player:getMark("@n_kuangle")
+    local suits = player:getMark("@[suits]n_kuangle")
     if suits == 0 then return false end
-    if table.contains(suits, card:getSuitString(true)) then
+    if table.contains(suits, card.suit) then
       return true
     end
   end,
@@ -1160,7 +1160,7 @@ local shicha = fk.CreateTriggerSkill{
 
     local room = player.room
     local to = room:getPlayerById(data.to)
-    return to:hasSkill(self) and to:getMark("@n_kuangle") ~= 0
+    return to:hasSkill(self) and to:getMark("@[suits]n_kuangle") ~= 0
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, nil, "#n_shicha_invoke:" .. data.to)
@@ -1177,10 +1177,10 @@ local shicha = fk.CreateTriggerSkill{
     room:setPlayerMark(to, self.name, 1)
     cardUseEvent:addExitFunc(function()
       room:setPlayerMark(to, self.name, 0)
-      room:setPlayerMark(to, "@n_kuangle", 0)
+      room:setPlayerMark(to, "@[suits]n_kuangle", 0)
     end)
 
-    local suits = to:getMark("@n_kuangle")
+    local suits = to:getMark("@[suits]n_kuangle")
     if suits == 0 or #suits <= 2 then return end
 
     -- 展示牌堆顶的牌，计算加伤数量
@@ -1189,7 +1189,7 @@ local shicha = fk.CreateTriggerSkill{
     data.additionalDamage = (data.additionalDamage or 0) +
     #table.filter(cards, function(id)
       local c = Fk:getCardById(id)
-      return table.contains(suits, c:getSuitString(true))
+      return table.contains(suits, c.suit)
     end)
   end,
 }
@@ -1206,7 +1206,7 @@ Fk:loadTranslationTable{
     "1. 摸1张牌，本回合使用此颜色牌不能再选择此项；" ..
     -- "2. 回复1点体力；" ..
     "2. 你使用的下一张牌不可被响应。",
-  ["@n_kuangle"] = "狂乐",
+  ["@[suits]n_kuangle"] = "狂乐",
   ["@@n_kuangle"] = "下一张强中",
   ["n_kuangle-draw"] = "摸1张牌，本回合使用此颜色牌不能再选择此项",
   ["n_kuangle-recover"] = "回复1点体力",
