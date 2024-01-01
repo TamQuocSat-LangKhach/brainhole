@@ -28,7 +28,7 @@ local n_juanlaotrig = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    local mark_name = "@n_juanlao"
+    local mark_name = "@[:]n_juanlao"
     if event == fk.CardUseFinished then
       room:setPlayerMark(player, mark_name, data.card.name)
     else
@@ -41,19 +41,19 @@ local n_juanlao = fk.CreateViewAsSkill{
   -- pattern = "nullification",
   enabled_at_play = function(self, player)
     if player:usedSkillTimes(self.name, Player.HistoryPhase) > 0 then return end
-    local cname = player:getMark("@n_juanlao")
+    local cname = player:getMark("@[:]n_juanlao")
     if cname == 0 then return end
     return player:canUse(Fk:cloneCard(cname))
   end,
   enabled_at_response = function(self, player)
     -- FIXME: should have some way to know current response pattern here
-    -- return player:getMark("@n_juanlao") == "nullification"
+    -- return player:getMark("@[:]n_juanlao") == "nullification"
     return false
   end,
 
   card_filter = function() return false end,
   view_as = function(self, cards)
-    local cname = Self:getMark("@n_juanlao")
+    local cname = Self:getMark("@[:]n_juanlao")
     if cname == 0 then return end
     local ret = Fk:cloneCard(cname)
     return ret
@@ -103,7 +103,7 @@ n_zy:addSkill(n_yegeng)
 Fk:loadTranslationTable{
   ["n_zy"] = "ＺＹ",
   ["n_juanlao"] = "奆佬",
-  ["@n_juanlao"] = "奆佬",
+  ["@[:]n_juanlao"] = "奆佬",
   [":n_juanlao"] = "出牌阶段限一次，你可以视为使用了本回合你使用过的" ..
     "上一张非转化普通锦囊牌。",
   ["n_yegeng"] = "夜更",
