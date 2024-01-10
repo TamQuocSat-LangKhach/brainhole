@@ -689,7 +689,7 @@ local n_rigeng = fk.CreateTriggerSkill{
     if player:hasSkill(self) and player == target and player.phase == Player.Play then
       return #player.room.logic:getEventsOfScope(GameEvent.UseCard, 999, function (e)
         return e.data[1].from == player.id
-      end, Player.HistoryPhase) >= (3 + player:usedSkillTimes(self.name, Player.HistoryTurn))
+      end, Player.HistoryPhase) >= (3 + 3 * player:usedSkillTimes(self.name, Player.HistoryTurn))
     end
   end,
   on_use = function(self, event, target, player, data)
@@ -705,7 +705,7 @@ local n_rigeng = fk.CreateTriggerSkill{
     local num = #room.logic:getEventsOfScope(GameEvent.UseCard, 999, function (e)
       return e.data[1].from == player.id
     end, Player.HistoryPhase)
-    room:setPlayerMark(player, "@n_rigeng-phase", num.."/"..(3 + player:usedSkillTimes(self.name, Player.HistoryTurn)))
+    room:setPlayerMark(player, "@n_rigeng-phase", num.."/"..(3 + 3 * player:usedSkillTimes(self.name, Player.HistoryTurn)))
   end,
 }
 ralph:addSkill(n_rigeng)
@@ -743,7 +743,7 @@ Fk:loadTranslationTable{
   [":n_subian"] = "出牌阶段限一次，你可以获得一张手牌的复制牌。",
   ["#n_subian"] = "速编：获得一张手牌的复制",
   ["n_rigeng"] = "日更",
-  [":n_rigeng"] = "锁定技，出牌阶段结束后，若你本阶段使用过至少3+X张牌，你执行一个额外的出牌阶段（X为本回合已发动过本技能的次数）。",
+  [":n_rigeng"] = "锁定技，出牌阶段结束后，若你本阶段使用过至少3*X张牌，你执行一个额外的出牌阶段（X为本回合已发动过本技能的次数+1）。",
   ["@n_rigeng-phase"] = "日更",
   ["n_fanxiu"] = "翻修",
   [":n_fanxiu"] = "限定技，出牌阶段，你可以获得本回合牌堆和弃牌堆中所有通过〖速编〗复制出来的卡牌。",
