@@ -397,9 +397,7 @@ local n_dunshi = fk.CreateViewAsSkill{
     if #names == 0 then return end
     return UI.ComboBox {choices = names}
   end,
-  card_filter = function()
-    return false
-  end,
+  card_filter = Util.FalseFunc,
   view_as = function(self, cards)
     if not self.interaction.data then return nil end
     local card = Fk:cloneCard(self.interaction.data)
@@ -453,15 +451,22 @@ local n_dunshi_record = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local choices = {"n_dunshi1", "n_dunshi2", "n_dunshi3"}
+    local card_name = player:getMark("n_dunshi_name-turn")
+    local choices = {"n_dunshi1:"..target.id, "n_dunshi2", "n_dunshi3:::"..card_name}
     local tech = {
-      "崩", "急", "典", "孝", "乐", "赢",
-                        "笑",       "营",
+      "崩",
+      "急", "集", "疾", "吉", "极", "汲",
+      "典", "点",
+      "孝", "笑", "效", "哮", "啸",
+      "乐",
+      "赢", "营", "迎", "荧", -- 盈
     }
+    local prevent
     for i = 1, 2, 1 do
       local choice = room:askForChoice(player, choices, self.name)
       table.removeOne(choices, choice)
-      if choice == "n_dunshi1" then
+      if choice:startsWith("n_dunshi1") then
+        prevent = true
         local skills = {}
         for _, general in ipairs(Fk:getAllGenerals()) do
           for _, skill in ipairs(general.skills) do
@@ -486,22 +491,22 @@ local n_dunshi_record = fk.CreateTriggerSkill{
         if not player.dead and player:getMark("n_dunshi") ~= 0 then
           player:drawCards(#player:getMark("n_dunshi"), "n_dunshi")
         end
-      elseif choice == "n_dunshi3" then
+      elseif choice:startsWith("n_dunshi3") then
         local mark = player:getMark("n_dunshi")
         if mark == 0 then
           mark = {}
         end
-        table.insert(mark, player:getMark("n_dunshi_name-turn"))
+        table.insert(mark, card_name)
         room:setPlayerMark(player, "n_dunshi", mark)
 
         local UImark = player:getMark("@$n_dunshi")
         if type(UImark) == "table" then
-          table.removeOne(UImark, player:getMark("n_dunshi_name-turn"))
+          table.removeOne(UImark, card_name)
           room:setPlayerMark(player, "@$n_dunshi", UImark)
         end
       end
     end
-    if not table.contains(choices, "n_dunshi1") then
+    if prevent then
       return true
     end
   end,
@@ -522,27 +527,14 @@ local n_dunshi_record = fk.CreateTriggerSkill{
 
 local n_yingma = fk.CreateTriggerSkill{
   name = "n_yingma",
-  --mute = true,
   frequency = Skill.Compulsory,
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player.phase == Player.Start
+    return target == player and player:hasSkill(self) and player.phase == Player.Start and player.maxHp < 7
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    --[[
-    if player:isWounded() then
-      room:recover({
-        who = player,
-        num = 1,
-        recoverBy = player,
-        skillName = self.name
-      })
-    end
-    ]]--
-    if player.maxHp < 7 then
-      room:changeMaxHp(player, 1)
-    end
+    room:changeMaxHp(player, 1)
   end,
 }
 Fk:addSkill(n_yingma)
@@ -558,9 +550,9 @@ Fk:loadTranslationTable{
   "3.删除你本次视为使用的牌名。",
   ["#n_dunshi_record"] = "炖世",
   ["@$n_dunshi"] = "炖世",
-  ["n_dunshi1"] = "防止此伤害，选择1个“君子六艺”的技能令其获得",
+  ["n_dunshi1"] = "防止此伤害，选择1个“君子六艺”的技能令 %src 获得",
   ["n_dunshi2"] = "减1点体力上限并摸X张牌",
-  ["n_dunshi3"] = "删除你本次视为使用的牌名",
+  ["n_dunshi3"] = "删除你本次视为使用的牌名：%arg",
   ["#n_dunshi-chooseskill"] = "炖世：选择令%dest获得的技能",
 
   ["n_yingma"] = "赢麻",
