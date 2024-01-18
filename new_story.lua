@@ -411,12 +411,11 @@ local n_dunshi = fk.CreateViewAsSkill{
   end,
   enabled_at_play = function(self, player)
     if player:usedSkillTimes(self.name, Player.HistoryTurn) > 0 then return false end
-    local names = n_dunshi_names
-    local mark = Self:getMark("n_dunshi")
-    for _, name in ipairs(names) do
-      if type(mark) ~= "table" or not table.contains(mark, name) then
+    local mark = U.getMark(player, "n_dunshi")
+    for _, name in ipairs(n_dunshi_names) do
+      if not table.contains(mark, name) then
         local to_use = Fk:cloneCard(name)
-        if Self:canUse(to_use) and not Self:prohibitUse(to_use) then
+        if player:canUse(to_use) and not player:prohibitUse(to_use) then
           return true
         end
       end
@@ -424,10 +423,9 @@ local n_dunshi = fk.CreateViewAsSkill{
   end,
   enabled_at_response = function(self, player, response)
     if player:usedSkillTimes(self.name, Player.HistoryTurn) > 0 then return false end
-    local names = n_dunshi_names
-    local mark = Self:getMark("n_dunshi")
-    for _, name in ipairs(names) do
-      if type(mark) ~= "table" or not table.contains(mark, name) then
+    local mark = U.getMark(player, "n_dunshi")
+    for _, name in ipairs(n_dunshi_names) do
+      if not table.contains(mark, name) then
         local to_use = Fk:cloneCard(name)
         if (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(to_use)) then
           return true
@@ -548,8 +546,10 @@ Fk:loadTranslationTable{
   ["n_dunshi"] = "炖世",
   [":n_dunshi"] = "每回合限一次，你可视为使用一张君子锦囊（拆顺无借懈笑瞒），然后当前回合角色本回合下次造成伤害时，你选择两项：<br>"..
   "1.防止此伤害，选择1个名字含有“典急孝乐崩赢”的同音字的技能令其获得；<br>"..
-  "2.减1点体力上限并摸X张牌（X为你选择3的次数）；<br>"..
-  "3.删除你本次视为使用的牌名。",
+  "2.减1点体力上限并摸X张牌（X为你选择选项3的次数）；<br>"..
+  "3.删除你本次视为使用的牌名。"..
+  "<font color='grey'><br><b>笑里藏刀</b>：出牌阶段，对一名其他角色使用。目标角色摸X张牌（X为其已损失体力值且至多为5），然后你对其造成1点伤害。"..
+  "<br><b>瞒天过海</b>：出牌阶段，对一至两名区域内有牌的其他角色使用。你依次获得目标角色区域内的一张牌，然后依次交给目标角色一张牌。",
   ["#n_dunshi_record"] = "炖世",
   ["@$n_dunshi"] = "炖世",
   ["n_dunshi1"] = "防止此伤害，选择1个“君子六艺”的技能令 %src 获得",
