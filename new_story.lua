@@ -912,6 +912,12 @@ Fk:loadTranslationTable{
   [":n_jizhan"] = "你的回合外，当其他角色于一回合内每发动六次技能后，" ..
     "你可以视为对其使用了一张不可响应的【杀】；若其未受伤，此【杀】伤害基数+1。" ..
     '<br /><font color="red">（注：由于判断发动技能的相关机制尚不完善，请不要汇报关于技能发动次数统计的bug）</font>',
+
+  -- 来自SR许褚
+  ["$n_luoyi1"] = "哈哈哈哈哈哈，来送死的吧！",
+  ["$n_luoyi2"] = "这一招如何！",
+  ["$n_jizhan"] = "纳命来！",
+  ["~n_jz__xuchu"] = "我还能…接着打…",
 }
 
 local lvbu = General(extension, "n_jz__lvbu", "qun", 4)
