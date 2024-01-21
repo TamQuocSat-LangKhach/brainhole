@@ -1217,6 +1217,72 @@ Fk:loadTranslationTable{
   ["#n_shicha_invoke"] = "是否发动 %src 的技能“失察”，对其可能强中并可能加伤？",
 }
 
+local sunquan = General(extension, "n_jz__sunquan", "wu", 10)
+local yingfa = fk.CreateActiveSkill{
+  name = "n_yingfa",
+  anim_type = "control",
+  prompt = "#n_yingfa-active",
+  max_card_num = 0,
+  target_num = 1,
+  can_use = function(self, player)
+    local x = player:getMark("n_yingfa_levelup") + 1
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < x
+  end,
+  card_filter = function() return false end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    if #selected > 0 or to_select == Self.id then return end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+  end,
+}
+local yingfa_trig = fk.CreateTriggerSkill{
+  name = "#n_yingfa_trig",
+}
+local yingfa_delay = fk.CreateTriggerSkill{
+  name = "#n_yingfa_delay",
+}
+sunquan:addSkill(yingfa)
+local shiwan = fk.CreateTriggerSkill{
+  name = "n_shiwan",
+  anim_type = "drawcard",
+  events = {fk.AfterCardsMove},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self) then return false end
+    local room = player.room
+    if table.find(room.alive_players, function(p)
+      return p ~= player and p.maxHp > player.maxHp
+    end) then return end
+
+    for _, move in ipairs(data) do
+      if move.from == player.id and move.to and move.to ~= player.id and move.moveReason == fk.ReasonPrey then
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.PlayerEquip or info.fromArea == Card.PlayerHand then
+            return true
+          end
+        end
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:drawCards(2, self.name)
+    room:changeMaxHp(player, -1)
+  end,
+}
+sunquan:addSkill(shiwan)
+Fk:loadTranslationTable{
+  ["n_jz__sunquan"] = "赢孙权",
+  ["n_yingfa"] = "赢伐",
+  [":n_yingfa"] = "准备阶段，若场上有张辽，你升级“制衡”；出牌阶段限X次，你可以将一名不是张辽的其他角色的副将替换为随机张辽直到你受到伤害或死亡。（X为你升级过“制衡”的次数+1）<br>" ..
+  '<font color="grey">※随机张辽：就是各种版本的张辽，包括神张辽，但不包括国战张辽。<br>※升级“制衡”：若没有制衡则获得标准版制衡，否则替换成增强版制衡（标->界->经典->会玩）；若已拥有“会玩”则摸一张牌。</font>',
+  ["#n_yingfa-active"] = "赢伐：请召唤张辽",
+  ["n_shiwan"] = "十万",
+  [":n_shiwan"] = "锁定技，当你的手牌被其他角色获得后，若你的体力上限为全场最高，你摸一张牌并减一点体力上限。",
+}
+
 -- 喵
 General(extension, 'q_machao', 'shu', 4).total_hidden = true
 General(extension, 'q_sunshangxiang', 'wu', 3, 3, General.Female).total_hidden = true
