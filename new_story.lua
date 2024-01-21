@@ -1228,21 +1228,85 @@ local yingfa = fk.CreateActiveSkill{
     local x = player:getMark("n_yingfa_levelup") + 1
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < x
   end,
-  card_filter = function() return false end,
+  card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected, selected_cards)
     if #selected > 0 or to_select == Self.id then return end
+    local to = Fk:currentRoom():getPlayerById(to_select)
+    return not string.find(to.general, "zhangliao") and not string.find(to.deputyGeneral, "zhangliao")
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
+    local dads = {}
+    for name, general in pairs(Fk.generals) do
+      if general.trueName == "zhangliao" and name ~= "hs__zhangliao"
+      and not general.hidden and not general.total_hidden then
+        table.insert(dads, name)
+      end
+    end
+    for _, p in ipairs(room.players) do
+      table.removeOne(dads, p.general)
+      if p.deputyGeneral ~= "" then table.removeOne(dads, p.deputyGeneral) end
+    end
+    if #dads == 0 then return end
+    local dad = table.random(dads)
+    local mark = U.getMark(player, "n_yingfa_target")
+    table.insertIfNeed(mark, {target.id, target.deputyGeneral})
+    room:setPlayerMark(player, "n_yingfa_target", mark)
+    room:changeHero(target, dad, false, true, true, true)
   end,
 }
 local yingfa_trig = fk.CreateTriggerSkill{
   name = "#n_yingfa_trig",
+  events = {fk.EventPhaseStart},
+  can_trigger = function (self, event, target, player, data)
+    if target == player and player:hasSkill("n_yingfa") and player.phase == Player.Start then
+      return table.find(player.room.players, function (p)
+        return string.find(p.general, "zhangliao") or string.find(p.deputyGeneral, "zhangliao")
+      end)
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    local skills = {"hs__zhiheng", "zhiheng", "ex__zhiheng", "n_huiwan"}
+    local index = -1
+    for _, s in ipairs(player.player_skills) do
+      index = math.max(index, table.indexOf(skills, s.name))
+    end
+    local skill = skills[index]
+    if skill == nil then
+      room:handleAddLoseSkills(player, "zhiheng")
+    elseif skill == "n_huiwan" then
+      player:drawCards(1, "n_yingfa")
+    else
+      room:addPlayerMark(player, "n_yingfa_levelup")
+      room:handleAddLoseSkills(player, skills[index+1].."|-"..skill)
+    end
+  end,
 }
+yingfa:addRelatedSkill(yingfa_trig)
 local yingfa_delay = fk.CreateTriggerSkill{
   name = "#n_yingfa_delay",
+  events = {fk.Death, fk.Damaged},
+  mute = true,
+  can_trigger = function (self, event, target, player, data)
+    if target == player then
+      return #U.getMark(player, "n_yingfa_target") > 0
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    local mark = U.getMark(player, "n_yingfa_target")
+    room:setPlayerMark(player, "n_yingfa_target", 0)
+    for _, m in ipairs(mark) do
+      local pid, dep = table.unpack(m)
+      room:changeHero(room:getPlayerById(pid), dep, false, true, true, true)
+    end
+  end,
 }
+yingfa:addRelatedSkill(yingfa_delay)
 sunquan:addSkill(yingfa)
 local shiwan = fk.CreateTriggerSkill{
   name = "n_shiwan",
@@ -1268,7 +1332,7 @@ local shiwan = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    player:drawCards(2, self.name)
+    player:drawCards(1, self.name)
     room:changeMaxHp(player, -1)
   end,
 }
@@ -1278,7 +1342,9 @@ Fk:loadTranslationTable{
   ["n_yingfa"] = "赢伐",
   [":n_yingfa"] = "准备阶段，若场上有张辽，你升级“制衡”；出牌阶段限X次，你可以将一名不是张辽的其他角色的副将替换为随机张辽直到你受到伤害或死亡。（X为你升级过“制衡”的次数+1）<br>" ..
   '<font color="grey">※随机张辽：就是各种版本的张辽，包括神张辽，但不包括国战张辽。<br>※升级“制衡”：若没有制衡则获得标准版制衡，否则替换成增强版制衡（标->界->经典->会玩）；若已拥有“会玩”则摸一张牌。</font>',
-  ["#n_yingfa-active"] = "赢伐：请召唤张辽",
+  ["#n_yingfa_trig"] = "赢伐",
+  ["#n_yingfa_delay"] = "赢伐",
+  ["#n_yingfa-active"] = "赢伐：请召唤张辽！",
   ["n_shiwan"] = "十万",
   [":n_shiwan"] = "锁定技，当你的手牌被其他角色获得后，若你的体力上限为全场最高，你摸一张牌并减一点体力上限。",
 }
