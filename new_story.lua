@@ -1237,13 +1237,10 @@ local yingfa = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local dads = {}
-    for name, general in pairs(Fk.generals) do
-      if general.trueName == "zhangliao" and name ~= "hs__zhangliao"
-      and not general.hidden and not general.total_hidden then
-        table.insert(dads, name)
-      end
-    end
+    local dads = table.simpleClone(Fk.same_generals["zhangliao"])
+    table.removeOne(dads, "hs__zhangliao")
+    table.insert(dads, "godzhangliao")
+    --table.insertTable(dads, Fk.same_generals["godzhangliao"])
     for _, p in ipairs(room.players) do
       table.removeOne(dads, p.general)
       if p.deputyGeneral ~= "" then table.removeOne(dads, p.deputyGeneral) end
@@ -1259,9 +1256,10 @@ local yingfa = fk.CreateActiveSkill{
 local yingfa_trig = fk.CreateTriggerSkill{
   name = "#n_yingfa_trig",
   events = {fk.EventPhaseStart},
+  main_skill = yingfa,
   can_trigger = function (self, event, target, player, data)
     if target == player and player:hasSkill("n_yingfa") and player.phase == Player.Start then
-      return table.find(player.room.players, function (p)
+      return table.find(player.room.alive_players, function (p)
         return string.find(p.general, "zhangliao") or string.find(p.deputyGeneral, "zhangliao")
       end)
     end
@@ -1269,13 +1267,14 @@ local yingfa_trig = fk.CreateTriggerSkill{
   on_cost = Util.TrueFunc,
   on_use = function (self, event, target, player, data)
     local room = player.room
-    local skills = {"hs__zhiheng", "zhiheng", "ex__zhiheng", "n_huiwan"}
+    local skills = {"hs__zhiheng", "zhiheng", "ex__zhiheng", "tycl__zhiheng", "n_huiwan"}
     local index = -1
     for _, s in ipairs(player.player_skills) do
       index = math.max(index, table.indexOf(skills, s.name))
     end
     local skill = skills[index]
     if skill == nil then
+      room:addPlayerMark(player, "n_yingfa_levelup")
       room:handleAddLoseSkills(player, "zhiheng")
     elseif skill == "n_huiwan" then
       player:drawCards(1, "n_yingfa")
@@ -1337,11 +1336,15 @@ local shiwan = fk.CreateTriggerSkill{
   end,
 }
 sunquan:addSkill(shiwan)
+sunquan:addRelatedSkill("zhiheng")
+sunquan:addRelatedSkill("ex__zhiheng")
+sunquan:addRelatedSkill("tycl__zhiheng")
+sunquan:addRelatedSkill("n_huiwan")
 Fk:loadTranslationTable{
   ["n_jz__sunquan"] = "赢孙权",
   ["n_yingfa"] = "赢伐",
-  [":n_yingfa"] = "准备阶段，若场上有张辽，你升级“制衡”；出牌阶段限X次，你可以将一名不是张辽的其他角色的副将替换为随机张辽直到你受到伤害或死亡。（X为你升级过“制衡”的次数+1）<br>" ..
-  '<font color="grey">※随机张辽：就是各种版本的张辽，包括神张辽，但不包括国战张辽。<br>※升级“制衡”：若没有制衡则获得标准版制衡，否则替换成增强版制衡（标->界->经典->会玩）；若已拥有“会玩”则摸一张牌。</font>',
+  [":n_yingfa"] = "准备阶段，若张辽在场且存活，你升级“制衡”；出牌阶段限X次，你可以将一名不是张辽的其他角色的副将替换为随机张辽直到你受到伤害或死亡。（X为你升级过“制衡”的次数+1）<br>" ..
+  '<font color="grey">※随机张辽：就是各种版本的张辽，包括神张辽，但不包括国战张辽。<br>※升级“制衡”：若没有制衡则获得标准版制衡，否则替换成增强版制衡（标->界->经典->会玩）；若已拥有“会玩”则升级失败，摸一张牌。</font>',
   ["#n_yingfa_trig"] = "赢伐",
   ["#n_yingfa_delay"] = "赢伐",
   ["#n_yingfa-active"] = "赢伐：请召唤张辽！",
