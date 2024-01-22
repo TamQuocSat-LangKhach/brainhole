@@ -452,11 +452,11 @@ local n_dunshi_record = fk.CreateTriggerSkill{
     local card_name = player:getMark("n_dunshi_name-turn")
     local tech = {
       "崩",
-      "急", "集", "疾", "吉", "极", "汲",
-      "典", "点",
-      "孝", "笑", "效", "哮", "啸",
+      "急", --"集", "疾", "吉", "极", "汲",
+      "典", --"点",
+      "孝", "笑", --"效", "哮", "啸",
       "乐",
-      "赢", "营", "迎", "荧", -- 盈
+      "赢", "营", --"迎", "荧",
     }
     local chosen = {}
     for i = 1, 2, 1 do
