@@ -1217,7 +1217,7 @@ Fk:loadTranslationTable{
   ["#n_shicha_invoke"] = "是否发动 %src 的技能“失察”，对其可能强中并可能加伤？",
 }
 
-local sunquan = General(extension, "n_jz__sunquan", "wu", 10)
+local sunquan = General(extension, "n_jz__sunquan", "wu", 3, 10)
 local yingfa = fk.CreateActiveSkill{
   name = "n_yingfa",
   anim_type = "control",
@@ -1336,8 +1336,8 @@ local shiwan = fk.CreateTriggerSkill{
   end,
 }
 sunquan:addSkill(shiwan)
-sunquan:addRelatedSkill("zhiheng")
-sunquan:addRelatedSkill("ex__zhiheng")
+-- sunquan:addRelatedSkill("zhiheng")
+sunquan:addSkill("ex__zhiheng")
 sunquan:addRelatedSkill("tycl__zhiheng")
 sunquan:addRelatedSkill("n_huiwan")
 Fk:loadTranslationTable{
