@@ -500,6 +500,96 @@ Fk:loadTranslationTable{
   ["@@n_kaoda-turn"] = "被拷打",
 }
 
+local youmukon = General:new(extension, "n_youmukon", "n_pigeon", 4)
+youmukon.trueName = "th_youmu"
+local yaodao = fk.CreateTriggerSkill{
+  name = "n_yaodao",
+  anim_type = "offensive",
+  frequency = Skill.Compulsory,
+  events = {fk.CardUseFinished, fk.CardRespondFinished},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.card and data.card.trueName == "slash" and not (data.card:isVirtual() and #data.card.subcards == 0)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local name = data.card.name
+    local dat = U.askForUseVirtualCard(room, player, name, nil, self.name, "#n_yaodao-use:::"..name, false, true, false, false, nil, true)
+    if dat then
+      self.cost_data = dat
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local use = self.cost_data
+    room:useCard(use)
+  end,
+
+  refresh_events = {fk.TargetSpecified, fk.CardUseFinished},
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.TargetSpecified then
+      return target == player and data.card and table.contains(data.card.skillNames, self.name)
+    else
+      return data.extra_data and data.extra_data.yaodaoNullified
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.TargetSpecified then
+      room:addPlayerMark(room:getPlayerById(data.to), fk.MarkArmorNullified)
+      data.extra_data = data.extra_data or {}
+      data.extra_data.yaodaoNullified = data.extra_data.yaodaoNullified or {}
+      data.extra_data.yaodaoNullified[tostring(data.to)] = (data.extra_data.yaodaoNullified[tostring(data.to)] or 0) + 1
+    else
+      for key, num in pairs(data.extra_data.yaodaoNullified) do
+        local p = room:getPlayerById(tonumber(key))
+        if p:getMark(fk.MarkArmorNullified) > 0 then
+          room:removePlayerMark(p, fk.MarkArmorNullified, num)
+        end
+      end
+      data.yaodaoNullified = nil
+    end
+  end,
+}
+local huanmeng = fk.CreateTriggerSkill{
+  name = "n_huanmeng",
+  anim_type = "masochism",
+  -- mute = true,
+  events = {fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and not table.find(player.room:getOtherPlayers(player), function(p)
+      return p.hp > player.hp
+    end)
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#n_huanmeng-invoke")
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    -- player:broadcastSkillInvoke(self.name)
+    -- room:notifySkillInvoked(player, self.name)
+    player:drawCards(1, self.name)
+    room.logic:breakTurn()
+  end,
+}
+youmukon:addSkill(yaodao)
+youmukon:addSkill(huanmeng)
+Fk:loadTranslationTable{
+  ["n_youmukon"] = "妖梦厨",
+  ["n_yaodao"] = "妖刀",
+  [":n_yaodao"] = "锁定技，你使用或打出非虚拟【杀】后，视为使用一张无视防具的同类别【杀】。",
+  ["n_huanmeng"] = "寰梦",
+  [":n_huanmeng"] = "你受到伤害后，若你的体力值最低，可以摸一张牌并结束回合。",
+
+  ["#n_yaodao-use"] = "妖刀：你视为使用一张无视防具的%arg。",
+  ["#n_huanmeng-invoke"] = "寰梦：你可以摸一张牌并结束回合。",
+
+  ["$n_huanmeng1"] = "（XP感叹号）",
+  ["$n_huanmeng2"] = "（XP错误）",
+  ["$n_huanmeng3"] = "（XP关键性终止）",
+  ["~n_youmukon"] = "（Biu~）",
+}
+
 local n_daotuwang = General(extension, "n_daotuwang", "n_pigeon", 3)
 local n_daotu = fk.CreateTriggerSkill{
   name = "n_daotu",
