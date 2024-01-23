@@ -558,7 +558,7 @@ local huanmeng = fk.CreateTriggerSkill{
   events = {fk.Damaged},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and not table.find(player.room:getOtherPlayers(player), function(p)
-      return p.hp > player.hp
+      return p.hp < player.hp
     end)
   end,
   on_cost = function(self, event, target, player, data)
