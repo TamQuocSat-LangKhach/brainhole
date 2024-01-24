@@ -574,6 +574,10 @@ local huanmeng = fk.CreateTriggerSkill{
 }
 youmukon:addSkill(yaodao)
 youmukon:addSkill(huanmeng)
+
+local youmukon_win = fk.CreateActiveSkill{ name = "n_youmukon_win_audio" }
+youmukon_win.package = extension
+Fk:addSkill(youmukon_win)
 Fk:loadTranslationTable{
   ["n_youmukon"] = "妖梦厨",
   ["n_yaodao"] = "妖刀",
@@ -584,10 +588,12 @@ Fk:loadTranslationTable{
   ["#n_yaodao-use"] = "妖刀：你视为使用一张无视防具的%arg。",
   ["#n_huanmeng-invoke"] = "寰梦：你可以摸一张牌并结束回合。",
 
+  ["$n_yaodao"] = "（蓄力斩）",
   ["$n_huanmeng1"] = "（XP感叹号）",
   ["$n_huanmeng2"] = "（XP错误）",
   ["$n_huanmeng3"] = "（XP关键性终止）",
   ["~n_youmukon"] = "（Biu~）",
+  ["$n_youmukon_win_audio"] = "（Spell Card Bonus!）",
 }
 
 local n_daotuwang = General(extension, "n_daotuwang", "n_pigeon", 3)
