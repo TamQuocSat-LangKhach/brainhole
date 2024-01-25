@@ -501,6 +501,7 @@ Fk:loadTranslationTable{
 }
 
 local youmukon = General:new(extension, "n_youmukon", "n_pigeon", 4)
+youmukon.gender = General.Female
 youmukon.trueName = "th_youmu"
 local yaodao = fk.CreateTriggerSkill{
   name = "n_yaodao",
