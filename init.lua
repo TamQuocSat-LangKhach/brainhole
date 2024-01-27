@@ -596,7 +596,7 @@ Fk:loadTranslationTable{
   ["~n_youmukon"] = "（Biu~）",
   ["$n_youmukon_win_audio"] = "（Spell Card Bonus!）",
 }
-
+--[[
 local emoprincess = General(extension, "n_emoprincess", "n_pigeon", 3, 3, General.Female)
 emoprincess.trueName = "emoprincess"
 local n_leimu = fk.CreateTriggerSkill{
@@ -700,9 +700,9 @@ Fk:loadTranslationTable{
   ["n_xiaogeng"] = "小更",
   [":n_xiaogeng"] = "出牌阶段结束时，你可以摸一张牌再将至少一张牌分配给其他角色，若至少给出两张牌，你可以视为使用分配的牌中一张基本牌或普通锦囊牌。",
   ["n_fencha"] = "分叉",
-  [":n_fencha"] = "限定技，出牌阶段限一次，你可以将一名角色的手牌与牌堆顶X张牌交换（X为牌堆牌数的个位数）。",
+  [":n_fencha"] = "限定技，出牌阶段，你可以将一名角色的所有手牌与牌堆顶X张牌交换（X为牌堆牌数的个位数）。",
 }
-
+--]]
 local n_daotuwang = General(extension, "n_daotuwang", "n_pigeon", 3)
 local n_daotu = fk.CreateTriggerSkill{
   name = "n_daotu",
