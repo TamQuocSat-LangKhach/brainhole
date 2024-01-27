@@ -597,6 +597,112 @@ Fk:loadTranslationTable{
   ["$n_youmukon_win_audio"] = "（Spell Card Bonus!）",
 }
 
+local emoprincess = General(extension, "n_emoprincess", "n_pigeon", 3, 3, General.Female)
+emoprincess.trueName = "emoprincess"
+local n_leimu = fk.CreateTriggerSkill{
+  name = "n_leimu",
+  anim_type = "defensive",
+  frequency = Skill.Compulsory,
+  events = {fk.RoundStart},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) then
+      return table.every(player.room.alive_players, function (p)
+        return p.hp >= player.hp
+      end)
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if player.maxHp < 7 then
+      room:changeMaxHp(player, 1)
+    end
+    if not player.dead and player:isWounded() then
+      room:recover { num = 1, skillName = self.name, who = player, recoverBy = player}
+    end
+  end,
+}
+emoprincess:addSkill(n_leimu)
+local n_xiaogeng = fk.CreateTriggerSkill{
+  name = "n_xiaogeng",
+  anim_type = "support",
+  events = {fk.EventPhaseEnd},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and target == player and player.phase == Player.Play
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:drawCards(1, self.name)
+    if player.dead or player:isNude() or #room:getOtherPlayers(player) == 0 then return end
+    local move = U.askForDistribution(player, player:getCardIds("he"), room:getOtherPlayers(player), self.name, 1, #player:getCardIds("he"), nil, nil, true)
+    local cards = U.doDistribution(room, move, player.id, self.name)
+    if #cards > 1 and not player.dead then
+      local names = {}
+      for _, id in ipairs(cards) do
+        local c = Fk:getCardById(id)
+        if c.type == Card.TypeBasic or c:isCommonTrick() then
+          table.insertIfNeed(names, Fk:getCardById(id).name)
+        end
+      end
+      if #names > 0 then
+        U.askForUseVirtualCard(room, player, names, nil, self.name, nil, true, true, false, true)
+      end
+    end
+  end,
+}
+emoprincess:addSkill(n_xiaogeng)
+local n_fencha = fk.CreateActiveSkill{
+  name = "n_fencha",
+  card_num = 0,
+  target_num = 1,
+  card_filter = Util.FalseFunc,
+  target_filter = function (self, to_select, selected)
+    return #selected == 0
+  end,
+  frequency = Skill.Limited,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local to = room:getPlayerById(effect.tos[1])
+    local moves = {}
+    local handcards = to:getCardIds("h")
+    if #handcards > 0 then
+      table.shuffle(handcards)
+      table.insert(moves, {
+        ids = handcards,
+        from = to.id,
+        toArea = Card.DrawPile,
+        moveReason = fk.ReasonExchange,
+        proposer = player.id,
+      })
+    end
+    local n = #room.draw_pile % 10
+    if n > 0 then
+      table.insert(moves, {
+        ids = room:getNCards(n),
+        to = to.id,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonExchange,
+        proposer = player.id,
+      })
+    end
+    if #moves > 0 then
+      room:moveCards(table.unpack(moves))
+    end
+  end,
+}
+emoprincess:addSkill(n_fencha)
+Fk:loadTranslationTable{
+  ["n_emoprincess"] = "emo",
+  ["n_leimu"] = "泪目",
+  [":n_leimu"] = "锁定技，每轮开始时，若你体力值最少，你增加一点体力上限（至多加至7）并回复一点体力。",
+  ["n_xiaogeng"] = "小更",
+  [":n_xiaogeng"] = "出牌阶段结束时，你可以摸一张牌再将至少一张牌分配给其他角色，若至少给出两张牌，你可以视为使用分配的牌中一张基本牌或普通锦囊牌。",
+  ["n_fencha"] = "分叉",
+  [":n_fencha"] = "限定技，出牌阶段限一次，你可以将一名角色的手牌与牌堆顶X张牌交换（X为牌堆牌数的个位数）。",
+}
+
 local n_daotuwang = General(extension, "n_daotuwang", "n_pigeon", 3)
 local n_daotu = fk.CreateTriggerSkill{
   name = "n_daotu",
