@@ -596,16 +596,16 @@ Fk:loadTranslationTable{
   ["~n_youmukon"] = "（Biu~）",
   ["$n_youmukon_win_audio"] = "（Spell Card Bonus!）",
 }
---[[
+
 local emoprincess = General(extension, "n_emoprincess", "n_pigeon", 3, 3, General.Female)
 emoprincess.trueName = "emoprincess"
 local n_leimu = fk.CreateTriggerSkill{
   name = "n_leimu",
   anim_type = "defensive",
   frequency = Skill.Compulsory,
-  events = {fk.RoundStart},
+  events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) then
+    if player:hasSkill(self) and target == player and player.phase == Player.Start and player.maxHp < 7 then
       return table.every(player.room.alive_players, function (p)
         return p.hp >= player.hp
       end)
@@ -613,9 +613,7 @@ local n_leimu = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if player.maxHp < 7 then
-      room:changeMaxHp(player, 1)
-    end
+    room:changeMaxHp(player, 1)
     if not player.dead and player:isWounded() then
       room:recover { num = 1, skillName = self.name, who = player, recoverBy = player}
     end
@@ -660,7 +658,7 @@ local n_fencha = fk.CreateActiveSkill{
   end,
   frequency = Skill.Limited,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and player:isWounded()
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
@@ -696,13 +694,13 @@ emoprincess:addSkill(n_fencha)
 Fk:loadTranslationTable{
   ["n_emoprincess"] = "emo",
   ["n_leimu"] = "泪目",
-  [":n_leimu"] = "锁定技，每轮开始时，若你体力值最少，你增加一点体力上限（至多加至7）并回复一点体力。",
+  [":n_leimu"] = "锁定技，准备阶段，若你的体力值为全场最少，且你的体力上限小于7，你增加一点体力上限并回复一点体力。",
   ["n_xiaogeng"] = "小更",
   [":n_xiaogeng"] = "出牌阶段结束时，你可以摸一张牌再将至少一张牌分配给其他角色，若至少给出两张牌，你可以视为使用分配的牌中一张基本牌或普通锦囊牌。",
   ["n_fencha"] = "分叉",
-  [":n_fencha"] = "限定技，出牌阶段，你可以将一名角色的所有手牌与牌堆顶X张牌交换（X为牌堆牌数的个位数）。",
+  [":n_fencha"] = "限定技，出牌阶段，若你已受伤，你可以将一名角色的所有手牌与牌堆顶X张牌交换（X为牌堆牌数的个位数）。",
 }
---]]
+
 local n_daotuwang = General(extension, "n_daotuwang", "n_pigeon", 3)
 local n_daotu = fk.CreateTriggerSkill{
   name = "n_daotu",
