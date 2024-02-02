@@ -1461,22 +1461,15 @@ local kangkang = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and
+    return target == player and player:hasSkill(self) and not data.to:isKongcheng() and
       (data.to == player:getNextAlive() or data.to:getNextAlive() == player) and
       player:usedSkillTimes(self.name, Player.HistoryTurn) < 2
   end,
   on_use = function(self, event, _, player, data)
     local room = player.room
     local target = data.to
-
-    local cids = target.player_cards[Player.Hand]
-    room:fillAG(player, cids)
-
-    local id = room:askForAG(player, cids, false, self.name)
-    room:closeAG(player)
-
-    if not id then return false end
-    room:obtainCard(player, id, false)
+    local id = room:askForCardChosen(player, target, { card_data = { { "$Hand", target:getCardIds(Player.Hand) }  } }, self.name)
+    room:obtainCard(player, id, false, fk.ReasonPrey)
   end,
 }
 jiege:addSkill(kangkang)
