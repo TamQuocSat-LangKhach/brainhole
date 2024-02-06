@@ -1250,7 +1250,7 @@ local yingfa = fk.CreateActiveSkill{
     local mark = U.getMark(player, "n_yingfa_target")
     table.insertIfNeed(mark, {target.id, target.deputyGeneral})
     room:setPlayerMark(player, "n_yingfa_target", mark)
-    room:changeHero(target, dad, false, true, true, true)
+    room:changeHero(target, dad, false, true, true, false)
   end,
 }
 local yingfa_trig = fk.CreateTriggerSkill{
@@ -1301,7 +1301,7 @@ local yingfa_delay = fk.CreateTriggerSkill{
     room:setPlayerMark(player, "n_yingfa_target", 0)
     for _, m in ipairs(mark) do
       local pid, dep = table.unpack(m)
-      room:changeHero(room:getPlayerById(pid), dep, false, true, true, true)
+      room:changeHero(room:getPlayerById(pid), dep, false, true, true, false)
     end
   end,
 }
