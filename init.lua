@@ -500,7 +500,7 @@ Fk:loadTranslationTable{
   ["@@n_kaoda-turn"] = "被拷打",
 }
 
-local youmukon = General:new(extension, "n_youmukon", "n_pigeon", 4)
+local youmukon = General:new(extension, "n_youmukon", "n_pigeon", 3)
 youmukon.gender = General.Female
 youmukon.trueName = "th_youmu"
 local yaodao = fk.CreateTriggerSkill{
@@ -949,6 +949,89 @@ Fk:loadTranslationTable{
   ["n_fanxiu"] = "翻修",
   [":n_fanxiu"] = "限定技，出牌阶段，你可以获得本回合牌堆和弃牌堆中所有通过〖速编〗复制出来的卡牌。",
   ["#n_fanxiu"] = "翻修：获得本回合牌堆和弃牌堆中所有通过〖速编〗复制出来的卡牌",
+}
+
+local n_0t = General(extension, "n_0t", "n_pigeon", 3)
+n_0t.gender = General.Female
+local cejin = fk.CreateViewAsSkill{
+  name = "n_cejin",
+  anim_type = "drawcard",
+  pattern = ".|.|.|.|.|normal_trick",
+  interaction = function()
+    local names, all_names = {} , {}
+    for _, id in ipairs(Fk:getAllCardIds()) do
+      local card = Fk:getCardById(id)
+      if card:isCommonTrick() and not card.is_derived and not card.is_damage_card then
+        table.insertIfNeed(all_names, card.name)
+        if not Self:prohibitUse(card) and
+        ((Fk.currentResponsePattern == nil and Self:canUse(card)) or
+        (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
+          table.insertIfNeed(names, card.name)
+        end
+      end
+    end
+    return UI.ComboBox {choices = names, all_choices = all_names}
+  end,
+  card_filter = function(self, to_select, selected)
+    if #selected == 1 then
+      return table.contains(Self:getHandlyIds(true), to_select) and Fk:getCardById(to_select).color ~= Fk:getCardById(selected[1]).color
+    elseif #selected == 2 then
+      return false
+    end
+    return table.contains(Self:getHandlyIds(true), to_select)
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 2 then return nil end
+    local card = Fk:cloneCard(self.interaction.data)
+    card:addSubcards(cards)
+    card.skillName = self.name
+    return card
+  end,
+  after_use = function(self, player, _)
+    player:drawCards(1)
+  end,
+  enabled_at_play = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 and
+      #player:getCardIds("h") >= 2
+  end,
+  enabled_at_response = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 and
+      #player:getCardIds("h") >= 2
+  end,
+}
+local yinghui = fk.CreateTriggerSkill{
+  name = "n_yinghui",
+  anim_type = "control",
+  events = {fk.BeforeDrawCard},
+  can_trigger = function(self, event, target, player, data)
+    if data.num == 2 then return end
+    return player:hasSkill(self) and not player:isNude()
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local ids = room:askForDiscard(player, 1, 1, true, self.name, true,
+      ".", "#n_yinghui-ask::" .. data.who.id .. ":" .. data.num, true)
+
+    if #ids > 0 then
+      self.cost_data = ids[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:throwCard(self.cost_data, self.name, player, player)
+    data.num = 2
+  end,
+}
+n_0t:addSkill(cejin)
+n_0t:addSkill(yinghui)
+Fk:loadTranslationTable{
+  ["n_0t"] = "聆听",
+  ["n_cejin"] = "策进",
+  [":n_cejin"] = "每回合限一次，你可以将两张颜色不同的手牌当一张非伤害普通锦囊牌使用，然后摸一张牌。",
+  ["n_yinghui"] = "萦回",
+  [":n_yinghui"] = "当有角色即将摸牌时，若不为两张，你可以弃置一张牌将摸牌数改成两张。",
+  ["#n_yinghui-ask"] = "萦回: %dest 即将摸 %arg 张牌，是否弃一张牌令其改为摸两张？",
 }
 
 local notify = General(extension, "n_notify", "n_pigeon", 3)
