@@ -1020,7 +1020,10 @@ local yinghui = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:throwCard(self.cost_data, self.name, player, player)
+    local num = data.num
     data.num = 2
+    local x = math.abs(num - data.num) - 1
+    if x > 0 then player:drawCards(x, self.name) end
   end,
 }
 n_0t:addSkill(cejin)
@@ -1030,7 +1033,7 @@ Fk:loadTranslationTable{
   ["n_cejin"] = "策进",
   [":n_cejin"] = "每回合限一次，你可以将两张颜色不同的手牌当一张非伤害普通锦囊牌使用，然后摸一张牌。",
   ["n_yinghui"] = "萦回",
-  [":n_yinghui"] = "当有角色即将摸牌时，若不为两张，你可以弃置一张牌将摸牌数改成两张。",
+  [":n_yinghui"] = "当有角色即将摸牌时，若不为两张，你可以弃置一张牌将摸牌数改成两张；若变化量超过1，你摸等同于超出数量的牌。",
   ["#n_yinghui-ask"] = "萦回: %dest 即将摸 %arg 张牌，是否弃一张牌令其改为摸两张？",
 }
 
