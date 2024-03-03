@@ -627,11 +627,12 @@ local dianlun = fk.CreateTriggerSkill{
       'n_cc_jiamei',
       'n_cc_gongzhen',
     }
-    if not table.find(room.alive_players, function(p) return p.gender == General.Female end) then
+    local female = table.filter(room:getOtherPlayers(player), function(p)
+      return p.gender == General.Female
+    end)
+    if #female == 0 then
       table.removeOne(classic, 'n_cc_gongzhen')
-      if not table.find(room.players, function(p) return p.dead == true end) then
-        table.removeOne(classic, 'n_cc_duoqi')
-      end
+      table.removeOne(classic, 'n_cc_duoqi')
     end
 
     if player:getMark('n_cc_duoqi') ~= 0 then
@@ -707,7 +708,6 @@ local dianlun = fk.CreateTriggerSkill{
 
       room:recover { num = 1, skillName = self.name, who = player }
     elseif choice == 'n_cc_duoqi' then
-      local female = table.filter(room:getOtherPlayers(player), function(p) return p.gender == General.Female end)
       local to = room:askForChoosePlayers(player, table.map(female, Util.IdMapper), 1, 1, '#n_cc_duoqi',
         self.name, false)[1]
       local tgt = room:getPlayerById(to)
@@ -715,11 +715,18 @@ local dianlun = fk.CreateTriggerSkill{
       player:broadcastSkillInvoke(self.name, 3)
       room:notifySkillInvoked(player, 'n_cc_duoqi', 'control')
 
-      local skills = table.map(Fk.generals[tgt.general].skills, Util.NameMapper)
-      local c = room:askForChoice(player, skills, self.name, "#n_cc_duoqi-choice::"..tgt.id, true)
-      if not player:hasSkill(c) then
+      local skills = Fk.generals[tgt.general]:getSkillNameList()
+      if Fk.generals[tgt.deputyGeneral] and Fk.generals[tgt.deputyGeneral].gender == General.Female then
+        table.insertTableIfNeed(skills, Fk.generals[tgt.deputyGeneral]:getSkillNameList())
+      end
+      skills = table.filter(skills, function(skill_name)
+        local skill = Fk.skills[skill_name]
+        return not player:hasSkill(skill, true) and (#skill.attachedKingdom == 0 or table.contains(skill.attachedKingdom, player.kingdom))
+      end)
+      if #skills > 0 then
+        room:setPlayerMark(player, 'n_cc_duoqi', 1)
+        local c = room:askForChoice(player, skills, self.name, "#n_cc_duoqi-choice::"..tgt.id, true)
         room:handleAddLoseSkills(player, c, nil, true, true)
-        player:setMark('n_cc_duoqi', 1)
       end
     elseif choice == 'n_cc_sanxiao' then
       local to = room:askForChoosePlayers(player,
@@ -750,7 +757,6 @@ local dianlun = fk.CreateTriggerSkill{
       tgt:drawCards(1, self.name)
       room:useVirtualCard('slash', nil, player, tgt, self.name, true)
     elseif choice == 'n_cc_gongzhen' then
-      local female = table.filter(room:getOtherPlayers(player), function(p) return p.gender == General.Female end)
       local to = room:askForChoosePlayers(player, table.map(female, Util.IdMapper), 1, 1, '#n_cc_gongzhen',
         self.name, false)[1]
       local tgt = room:getPlayerById(to)
@@ -759,7 +765,9 @@ local dianlun = fk.CreateTriggerSkill{
       room:notifySkillInvoked(player, 'n_cc_gongzhen', 'control')
 
       player:drawCards(1, self.name)
-      tgt:drawCards(1, self.name)
+      if not tgt.dead then
+        tgt:drawCards(1, self.name)
+      end
       player:turnOver()
       tgt:turnOver()
     end
@@ -778,9 +786,9 @@ Fk:loadTranslationTable{
     '其在开始判定之前可以对自己造成1点雷电伤害中止此流程。' ..
     '<br/>*割须：弃置装备区的1张牌并回复1点体力。' ..
     '<br/>*夺妻：整局游戏限一次，获得一名其他女性角色武将牌上的一个技能。' ..
-    '<br/>*三笑：指定一名角色，令其对你用一张无视距离的【杀】，若此杀未造成伤害，其本回合非锁定技失效。' ..
+    '<br/>*三笑：指定一名角色，令其选择是否对你用一张无视距离的【杀】，若其未使用【杀】或此【杀】未造成对你伤害，其本回合非锁定技失效。' ..
     '<br/>*假寐：你令一名其他角色摸1张牌，再视为对其使用一张【杀】。' ..
-    '<br/>*共枕：指定一名女性角色，和你各摸1张牌并翻面。</font>',
+    '<br/>*共枕：指定一名其他女性角色，你与其各摸1张牌并翻面。</font>',
   ['#n_dianlun_start'] = '典论: 请弃置一张牌并爆典',
   ['n_cc_lunying'] = '论英',
   [':n_cc_lunying'] = '令你和一名其他角色依次进行闪电判定，直到有一方受到伤害为止，其在开始判定之前可以对自己造成1点雷电伤害中止此流程。',
