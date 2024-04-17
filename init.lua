@@ -1186,7 +1186,9 @@ local n_hunyuan = fk.CreateTriggerSkill{
     if not (event == fk.Damage or event == fk.Damaged) then
       local clist = {"n_toNormal", "n_toThunder", "n_toFire", "cancel"}
       local clist2 = {"n_toNormal", "n_toThunder", "n_toFire", "cancel"}
-      table.remove(clist, data.damageType)
+      if data.damageType < 3 then
+        table.remove(clist, data.damageType)
+      end
       local choice = room:askForChoice(player, clist, self.name)
       if choice ~= "cancel" then
         self.cost_data = table.indexOf(clist2, choice)
