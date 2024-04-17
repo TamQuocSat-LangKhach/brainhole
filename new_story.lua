@@ -140,15 +140,12 @@ local n_huiwan = fk.CreateActiveSkill{
     }
   end,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name) < 9999
+    return player:usedSkillTimes(self.name) == 0
   end,
   on_use = function(self, room, effect)
     local from = room:getPlayerById(effect.from)
     local hand = from:getCardIds(Player.Hand)
     local more = #hand > 0
-    room:killPlayer({
-      who = room:getLord().id,
-    })
     for _, id in ipairs(hand) do
       if not table.contains(effect.cards, id) then
         more = false
