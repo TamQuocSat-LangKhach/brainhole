@@ -28,6 +28,7 @@ local n_cizhi = fk.CreateTriggerSkill{
 n_guoxiu:addSkill(n_cizhi)
 Fk:loadTranslationTable{
   ["n_guoxiu"] = "郭修",
+  ["designer:n_guoxiu"] = "notify",
   ["n_cizhi"] = "刺智",
   [":n_cizhi"] = "当你对一名角色造成伤害后，若你的体力值不大于其，" ..
     "则你可以对其造成一点伤害。",
@@ -102,6 +103,7 @@ n_wanghou:addRelatedSkill(n_fenliang)
 n_wanghou:addSkill(n_anjun)
 Fk:loadTranslationTable{
   ["n_wanghou"] = "王垕",
+  ["designer:n_wanghou"] = "notify",
   ["n_jianliang"] = "监粮",
   [":n_jianliang"] = "游戏开始前，你将牌堆中所有【桃】置于武将牌上，称为“粮”；然后再令所有角色获得技能“分粮”。",
   ["n_fenliang"] = "分粮",
@@ -279,6 +281,8 @@ local n_jiequanisbest = fk.CreateTriggerSkill{
 n_jiequan:addSkill(n_jiequanisbest)
 Fk:loadTranslationTable{
   ["n_jiequan"] = "界权",
+  ["designer:n_jiequan"] = "notify",
+
   ["n_huiwan"] = "会玩",
   [":n_huiwan"] = "出牌阶段限一次，你可以弃置任意张牌并摸等量的牌。若你以此法弃置了所有的手牌，你多摸一张牌。",
   ["n_huiwan_dont_use"] = "我觉得自己已经很会玩了，不需要“会玩”",
@@ -371,6 +375,7 @@ zhushixing:addSkill(huayuan)
 zhushixing:addSkill(qujing)
 Fk:loadTranslationTable{
   ["n_pujing"] = "普净",
+  ["designer:n_pujing"] = "notify",
   ["n_huayuan"] = "化缘",
   [":n_huayuan"] = "摸牌阶段开始时，你可以获得上家的两张牌，然后交给其两张牌"  ..
     "（均明置，不足则不给），若这四张牌的花色：各不相同，你摸两张牌；都相同，你回复一点体力。",
@@ -543,6 +548,8 @@ guanning:addSkill(n_dunshi)
 guanning:addRelatedSkill("n_yingma")
 Fk:loadTranslationTable{
   ["n_guanning"] = "菅宁",
+  ["designer:n_guanning"] = "RalphR",
+
   ["n_dunshi"] = "炖世",
   [":n_dunshi"] = "每回合限一次，你可视为使用一张君子锦囊（拆顺无借懈笑瞒），然后当前回合角色本回合下次造成伤害时，你选择两项：<br>"..
   "1.防止此伤害，选择1个名字含有“典急孝乐崩赢”的同音字的技能令其获得；<br>"..
@@ -776,6 +783,8 @@ local dianlun = fk.CreateTriggerSkill{
 caocao:addSkill(dianlun)
 Fk:loadTranslationTable{
   ['n_jz__caocao'] = '典曹操',
+  ["designer:n_jz__caocao"] = "notify",
+
   ['n_jianxiong'] = '奸雄',
   [':n_jianxiong'] = '当你受到伤害后，你可以选择： 1. 获得伤害牌；2. 摸一张牌。',
   ['n_jianxiong_draw'] = '摸一张牌',
@@ -908,6 +917,8 @@ local nuzhan = fk.CreateTriggerSkill{
 xuchu:addSkill(nuzhan)
 Fk:loadTranslationTable{
   ["n_jz__xuchu"] = "急许褚",
+  ["designer:n_jz__xuchu"] = "notify",
+
   ["n_luoyi"] = '裸衣',
   ["@@n_luoyi"] = '裸衣',
   [':n_luoyi'] = '摸牌阶段，你可以少摸一张牌，若如此做，直到你的下回合开始，' ..
@@ -1044,6 +1055,8 @@ Fk:loadTranslationTable{
   ["n_jz"] = "互联网六艺",
 
   ["n_jz__lvbu"] = "孝吕布",
+  ["designer:n_jz__lvbu"] = "notify",
+
   ["n_yixiao"] = "义孝",
   [":n_yixiao"] = "准备阶段，若场上没有“义父”，你须令一名其他角色获得“义父”标记；" ..
     "若有，你可以对其使用一张无视距离的【杀】，然后移动“义父”标记。" ..
@@ -1207,6 +1220,8 @@ weiyan:addSkill("kuanggu")
 
 Fk:loadTranslationTable{
   ['n_jz__weiyan'] = "乐魏延",
+  ["designer:n_jz__weiyan"] = "notify",
+
   ['n_kuangle'] = '狂乐',
   ['#n_kuangle_dr'] = '狂乐',
   [':n_kuangle'] = '锁定技，当你使用牌结算完成后，若其花色未被记录，' ..
@@ -1350,6 +1365,8 @@ sunquan:addRelatedSkill("tycl__zhiheng")
 sunquan:addRelatedSkill("n_huiwan")
 Fk:loadTranslationTable{
   ["n_jz__sunquan"] = "赢孙权",
+  ["designer:n_jz__sunquan"] = "notify",
+
   ["n_yingfa"] = "赢伐",
   [":n_yingfa"] = "结束阶段，若张辽在场且存活，你升级“制衡”；出牌阶段限X次，你可以将一名不是张辽的其他角色的副将替换为随机张辽直到你受到伤害或死亡。（X为你升级过“制衡”的次数+1）<br>" ..
   '<font color="grey">※随机张辽：就是各种版本的张辽，包括神张辽，但不包括国战张辽。<br>※升级“制衡”：若没有制衡则获得标准版制衡，否则替换成增强版制衡（标->界->经典->会玩）；若已拥有“会玩”则升级失败，摸一张牌。</font>',
