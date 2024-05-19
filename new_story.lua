@@ -92,7 +92,8 @@ local n_anjun = fk.CreateTriggerSkill{
   events = {fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
     return data.to == player and player:hasSkill(self) and #player:getPile("n_liang") == 0 and
-    target and (table.contains({"caocao", "godcaocao"}, Fk.generals[target.general].trueName) or target.role == "lord")
+    target and (table.contains({"caocao", "godcaocao"}, Fk.generals[target.general].trueName) or target.role == "lord"
+    or (target.deputyGeneral ~= "" and table.contains({"caocao", "godcaocao"}, Fk.generals[target.deputyGeneral].trueName)))
   end,
   on_use = function(self, event, target, player, data)
     data.damage = data.damage + 1
@@ -579,7 +580,7 @@ local jianxiong = fk.CreateTriggerSkill{
   anim_type = "masochism",
   events = {fk.Damaged},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) 
+    return target == player and player:hasSkill(self)
   end,
   on_cost = function(self, event, target, player, data)
     local choices = {'n_jianxiong_draw'}
@@ -744,7 +745,7 @@ local dianlun = fk.CreateTriggerSkill{
       player:broadcastSkillInvoke(self.name, 4)
       room:notifySkillInvoked(player, 'n_cc_sanxiao', 'masochism')
 
-      local use = room:askForUseCard(tgt, "slash", nil, "#n_cc_sanxiao-use", false, {
+      local use = room:askForUseCard(tgt, "slash", nil, "#n_cc_sanxiao-use:"..player.id, false, {
         must_targets = { player.id },
         bypass_distances = true,
       })
@@ -786,12 +787,12 @@ Fk:loadTranslationTable{
   ["designer:n_jz__caocao"] = "notify",
 
   ['n_jianxiong'] = '奸雄',
-  [':n_jianxiong'] = '当你受到伤害后，你可以选择： 1. 获得伤害牌；2. 摸一张牌。',
+  [':n_jianxiong'] = '当你受到伤害后，你可以选择一项：1.获得伤害牌；2.摸一张牌。',
   ['n_jianxiong_draw'] = '摸一张牌',
   ['n_jianxiong_get'] = '获得伤害牌',
   ['n_dianlun'] = '典论',
   [':n_dianlun'] = '锁定技，每回合限一次，你在摸牌阶段外获得牌后，你须弃置一张牌并从随机2个典中爆一次典。' ..
-    '<br/><font color="blue">*论英：令你和一名其他角色依次进行闪电判定，直到有一方受到伤害为止，' ..
+    '<br/><font color="grey">*论英：令你和一名其他角色依次进行闪电判定，直到有一方受到伤害为止，' ..
     '其在开始判定之前可以对自己造成1点雷电伤害中止此流程。' ..
     '<br/>*割须：弃置装备区的1张牌并回复1点体力。' ..
     '<br/>*夺妻：整局游戏限一次，获得一名其他女性角色武将牌上的一个技能。' ..
@@ -813,7 +814,7 @@ Fk:loadTranslationTable{
   ['n_cc_sanxiao'] = '三笑',
   [':n_cc_sanxiao'] = '指定一名角色，令其对你用一张无视距离的【杀】，若此杀未造成伤害，其本回合非锁定技失效。',
   ['#n_cc_sanxiao'] = '三笑: 令一名其他角色【杀】你，若没杀中则其本回合非锁定技失效',
-  ['#n_cc_sanxiao-use'] = '三笑: 请对曹操出杀，不杀或未杀中则本回合非锁定技失效',
+  ['#n_cc_sanxiao-use'] = '三笑: 请对 %src 使用【杀】，不杀或未杀中则本回合非锁定技失效',
   ['n_cc_jiamei'] = '假寐',
   [':n_cc_jiamei'] = '你令一名其他角色摸1张牌，再视为对其使用一张【杀】。',
   ['#n_cc_jiamei'] = '假寐: 令一名其他角色摸一张牌并视为对其出【杀】',
