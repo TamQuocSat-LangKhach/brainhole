@@ -752,6 +752,7 @@ local dianlun = fk.CreateTriggerSkill{
       if use then room:useCard(use) end
       if (not use) or (not use.damageDealt) or (not use.damageDealt[player.id]) then
         room:addPlayerMark(tgt, MarkEnum.UncompulsoryInvalidity .. "-turn")
+        room:setPlayerMark(tgt, "@@n_cc_sanxiao-turn", 1)
       end
     elseif choice == 'n_cc_jiamei' then
       local to = room:askForChoosePlayers(player,
@@ -815,6 +816,7 @@ Fk:loadTranslationTable{
   [':n_cc_sanxiao'] = '指定一名角色，令其对你用一张无视距离的【杀】，若此杀未造成伤害，其本回合非锁定技失效。',
   ['#n_cc_sanxiao'] = '三笑: 令一名其他角色【杀】你，若没杀中则其本回合非锁定技失效',
   ['#n_cc_sanxiao-use'] = '三笑: 请对 %src 使用【杀】，不杀或未杀中则本回合非锁定技失效',
+  ['@@n_cc_sanxiao-turn'] = '被三笑',
   ['n_cc_jiamei'] = '假寐',
   [':n_cc_jiamei'] = '你令一名其他角色摸1张牌，再视为对其使用一张【杀】。',
   ['#n_cc_jiamei'] = '假寐: 令一名其他角色摸一张牌并视为对其出【杀】',
@@ -1375,7 +1377,7 @@ Fk:loadTranslationTable{
   ["#n_yingfa_delay"] = "赢伐",
   ["#n_yingfa-active"] = "赢伐：请召唤张辽！",
   ["n_shiwan"] = "十万",
-  [":n_shiwan"] = "锁定技，当你的手牌被其他角色获得后，若你的体力上限为全场最高，你摸一张牌并减一点体力上限。",
+  [":n_shiwan"] = "锁定技，当你的牌被其他角色获得后，若你的体力上限为全场最高，你摸一张牌并减一点体力上限。",
 }
 
 -- 喵
