@@ -514,7 +514,7 @@ local yaodao = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local name = data.card.name
-    local dat = U.askForUseVirtualCard(room, player, name, nil, self.name, "#n_yaodao-use:::"..name, false, true, false, false, nil, true)
+    local dat = U.askForUseVirtualCard(room, player, name, nil, self.name, "#n_yaodao-use:::"..name, false, true, false, true, nil, true)
     if dat then
       self.cost_data = dat
       return true
