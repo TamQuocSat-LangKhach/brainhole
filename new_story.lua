@@ -51,8 +51,8 @@ local n_jianliang = fk.CreateTriggerSkill{
     local peachs = Fk:cloneCard("peach")
     peachs:addSubcards(room:getCardsFromPileByRule("peach", bigNumber))
     player:addToPile("n_liang", peachs, true, self.name)
-    for _, p in ipairs(room.players) do
-      room:handleAddLoseSkills(p, "n_fenliang", nil, true, false)
+    for _, p in ipairs(room:getAlivePlayers()) do
+      room:handleAddLoseSkills(p, "n_fenliang", nil, false)
     end
   end,
 }
@@ -61,28 +61,24 @@ local n_fenliang = fk.CreateActiveSkill{
   anim_type = "support",
   card_num = 3,
   target_num = 1,
+  prompt = "#n_fenliang-prompt",
   card_filter = function(self, to_select, selected)
     return #selected < 3 and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
   end,
-  target_filter = function(self, to_select, selected)
-    return #selected == 0 and #Fk:currentRoom():getPlayerById(to_select):getPile("n_liang") > 0
+  target_filter = function(self, to_select, selected, cards)
+    return #selected == 0 and #Fk:currentRoom():getPlayerById(to_select):getPile("n_liang") > 0 and #cards == 3
   end,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name) == 0 and player:isWounded()
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and player:isWounded()
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local supply = Fk:cloneCard("peach")
-    supply:addSubcards(table.random(
-      target:getPile("n_liang"),
-      math.min(math.random(1, player:getLostHp()), #target:getPile("n_liang"))
-    ))
-
-    local tmp = Fk:cloneCard 'slash'
-    tmp:addSubcards(effect.cards)
-    room:obtainCard(target, tmp, false, fk.ReasonGive)
-    room:obtainCard(player, supply, false)
+    room:obtainCard(target, effect.cards, false, fk.ReasonGive, player.id, self.name)
+    if #target:getPile("n_liang") > 0 and not player.dead and player:isWounded() then
+      local supply = table.random(target:getPile("n_liang"), math.random(1, player:getLostHp()))
+      room:obtainCard(player, supply, true, fk.ReasonPrey, player.id, self.name)
+    end
   end,
 }
 local n_anjun = fk.CreateTriggerSkill{
@@ -109,6 +105,7 @@ Fk:loadTranslationTable{
   [":n_jianliang"] = "游戏开始前，你将牌堆中所有【桃】置于武将牌上，称为“粮”；然后再令所有角色获得技能“分粮”。",
   ["n_fenliang"] = "分粮",
   [":n_fenliang"] = "出牌阶段限一次，若你已受伤，你可以交给有“粮”的角色三张手牌，从“粮”中获得随机的1~X张牌（X为你损失体力值）。",
+  ["#n_fenliang-prompt"] = "分粮：你可以将三张手牌交给有“粮”的角色，获得随机张“粮”",
   ["n_anjun"] = "安军",
   [":n_anjun"] = "锁定技，若你没有“粮”，曹操或者主公对你造成的伤害+1。",
   ["n_liang"] = "粮",
