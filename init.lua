@@ -1040,9 +1040,10 @@ Fk:loadTranslationTable{
 local notify = General(extension, "n_notify", "n_pigeon", 3)
 local bianchengTrig = fk.CreateTriggerSkill{
   name = "#n_biancheng_trig",
-  refresh_events = {fk.AfterCardsMove},
+  refresh_events = {fk.AfterCardsMove, fk.AfterDrawPileShuffle},
   can_refresh = function(self, event, target, player, data)
-    if not player:hasSkill("n_biancheng") then return end
+    if not player:hasSkill("n_biancheng", true) then return end
+    if event == fk.AfterDrawPileShuffle then return true end
     for _, move in ipairs(data) do
       if move.toArea == Card.DrawPile then
         return true
@@ -1062,26 +1063,19 @@ local bianchengTrig = fk.CreateTriggerSkill{
 local biancheng = fk.CreateViewAsSkill{
   name = "n_biancheng",
   card_num = 0,
-  -- anim_type = "drawcard",
   pattern = ".",
-  interaction = function(self)
+  prompt = function(self)
     local card = Fk:getCardById(Self:getMark(self.name))
-    if not card then return end
-    return UI.ComboBox {
-      choices = { Fk:translate(card.name) .. '['
-        .. Fk:translate("log_" .. card:getSuitString())
-        .. card.number .. ']'
-      }
-    }
+    if card then
+      return "#n_biancheng:::"..card:toLogString()
+    end
+    return ""
   end,
-  card_filter = function()
-    return false
-  end,
-  view_as = function(self, cards)
+  card_filter = Util.FalseFunc,
+  view_as = function(self)
     local card = Fk:getCardById(Self:getMark(self.name))
+    if not card then return nil end
     if Self:getMark("@@n_baogan") == 0 and card.suit == Card.Spade then return nil end
-    card = Fk:cloneCard(card.name)
-    card.skillName = self.name
     return card
   end,
   before_use = function(self, player, use)
@@ -1113,7 +1107,7 @@ local tiaoshi = fk.CreateActiveSkill{
     return "#n_tiaoshi:::" .. Self:usedSkillTimes(self.name)
   end,
   card_num = function(self)
-    return Self:usedSkillTimes(self.name)
+    return Self:usedSkillTimes(self.name, Player.HistoryPhase)
   end,
   card_filter = function(self, to_select, selected)
     return #selected < Self:usedSkillTimes(self.name) and
@@ -1133,10 +1127,11 @@ local baogan = fk.CreateActiveSkill{
   card_num = 0,
   target_num = 0,
   frequency = Skill.Limited,
+  prompt = "#n_baogan",
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
-  card_filter = function() return false end,
+  card_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
     room:setPlayerMark(room:getPlayerById(effect.from), "@@n_baogan", 1)
   end,
@@ -1158,12 +1153,14 @@ Fk:loadTranslationTable{
   ["n_notify"] = "Notify_",
   ["n_biancheng"] = "编程",
   [":n_biancheng"] = "你可以使用或打出牌堆顶的非黑桃牌。",
+  ["#n_biancheng"] = "编程：你可以使用或打出牌堆顶的非黑桃牌%arg",
   ["n_tiaoshi"] = "调试",
   [":n_tiaoshi"] = "出牌阶段，你可以弃置X张牌并摸一张牌。（X为本阶段发动过该技能的次数）",
   ["#n_tiaoshi"] = "调试：弃置 %arg 张牌，然后摸 1 张牌",
   ["n_baogan"] = "爆肝",
   ["@@n_baogan"] = "爆肝",
   [":n_baogan"] = "限定技，出牌阶段，你可以令“编程”变得也可使用打出黑桃牌直到你下回合开始。",
+  ["#n_baogan"] = "爆肝:令“编程”也可使用打出黑桃牌直到你下回合开始！",
 }
 
 local n_mabaoguo = General(extension, "n_mabaoguo", "qun", 4)
