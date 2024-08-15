@@ -1833,8 +1833,8 @@ local extension_card = Package("brainhole_cards", Package.CardPack)
 local brickSkill = fk.CreateActiveSkill{
   name = "n_brick_skill",
   max_round_use_time = 1,
-  can_use = function(self, player, card)
-    return table.find(Fk:currentRoom().alive_players, function(p)
+  can_use = function(self, player, card, extra_data)
+    return (extra_data and extra_data.bypass_times) or table.find(Fk:currentRoom().alive_players, function(p)
       return self:withinTimesLimit(player, Player.HistoryRound, card, "n_brick", p)
     end)
   end,
@@ -1844,18 +1844,21 @@ local brickSkill = fk.CreateActiveSkill{
     local from = Fk:currentRoom():getPlayerById(user)
     return from ~= player and not (distance_limited and not self:withinDistanceLimit(from, true, card, player))
   end,
-  target_filter = function(self, to_select, selected, _, card)
+  target_filter = function(self, to_select, selected, _, card, extra_data)
     if #selected < self:getMaxTargetNum(Self, card) then
       local player = Fk:currentRoom():getPlayerById(to_select)
       return self:modTargetFilter(to_select, selected, Self.id, card, true) and
-      (#selected > 0 or self:withinTimesLimit(Self, Player.HistoryRound, card, "n_brick", player))
+      (#selected > 0 or self:withinTimesLimit(Self, Player.HistoryRound, card, "n_brick", player)
+      or (extra_data and extra_data.bypass_times))
     end
   end,
   on_effect = function(self, room, effect)
     local from = room:getPlayerById(effect.from)
     local to = room:getPlayerById(effect.to)
-
-    room:obtainCard(to, effect.card, true, fk.ReasonGive)
+    local cards = room:getSubcardsByRule(effect.card, { Card.Processing })
+    if #cards > 0 and not to.dead then
+      room:obtainCard(to, effect.card, true, fk.ReasonGive, from.id)
+    end
     if to.dead then return false end
     room:damage({
       from = from,
