@@ -988,7 +988,9 @@ local cejin = fk.CreateViewAsSkill{
     return card
   end,
   after_use = function(self, player, _)
-    player:drawCards(1)
+    if not player.dead then
+      player:drawCards(1, self.name)
+    end
   end,
   enabled_at_play = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 and
