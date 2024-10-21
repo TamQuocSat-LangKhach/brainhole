@@ -1764,28 +1764,30 @@ local chiyao = fk.CreateTriggerSkill{
   events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
     return target ~= player and player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryTurn) < 2 and
-      data.card.is_damage_card and not data.card:isVirtual() and not player:isAllNude()
+      data.card.is_damage_card and not data.card:isVirtual() and not player:isNude()
   end,
   on_cost = function(self, event, target, player, data)
     local c = player.room:askForDiscard(player, 1, 1, true, self.name, true,
       ".|.|heart", "#n_chiyao-discard:::" .. data.card:toLogString(), true)
 
     if c[1] then
-      self.cost_data = c[1]
+      self.cost_data = {tos = {target.id}, cards = c}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:throwCard(self.cost_data, self.name, player, player)
-    if Fk:getCardById(self.cost_data).suit == Card.Heart and not target:isAllNude() then
+    room:throwCard(self.cost_data.cards, self.name, player, player)
+    if not player.dead and not target:isNude() then
       local card = room:askForCardChosen(player, target, "he", self.name)
       room:throwCard({card}, self.name, target, player)
     end
-
-    -- FIXME: CardUsing return true 没法无效啊
-    -- return true
-    room.logic:getCurrentEvent().parent:shutdown()
+    if data.toCard then
+      data.toCard = nil
+    else
+      data.tos = {}
+    end
+    --room.logic:getCurrentEvent().parent:shutdown()
   end,
 }
 guojicheng:addSkill(chiyao)
@@ -1798,14 +1800,13 @@ local rulai = fk.CreateTriggerSkill{
     if not player:hasSkill(self) then return end
     if data.card.trueName ~= "slash" then return end
     local room = player.room
+    if #TargetGroup:getRealTargets(data.tos) == 0 or (data.nullifiedTargets and #data.nullifiedTargets > 0) then return true end
     local cur = room.logic:getCurrentEvent()
     if cur.interrupted then return true end
     local effects = cur:searchEvents(GameEvent.CardEffect, math.huge)
     for _, e in ipairs(effects) do
-      if e.interrupted then
-        if not room:getPlayerById(e.data[1].to).dead then
-          return true
-        end
+      if e.data[1].isCancellOut or (e.interrupted and not room:getPlayerById(e.data[1].to).dead) then
+        return true
       end
     end
   end,
