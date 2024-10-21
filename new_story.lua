@@ -414,7 +414,7 @@ local n_dunshi = fk.CreateViewAsSkill{
   end,
   enabled_at_play = function(self, player)
     if player:usedSkillTimes(self.name, Player.HistoryTurn) > 0 then return false end
-    local mark = U.getMark(player, "n_dunshi")
+    local mark = player:getTableMark("n_dunshi")
     for _, name in ipairs(n_dunshi_names) do
       if not table.contains(mark, name) then
         local to_use = Fk:cloneCard(name)
@@ -426,7 +426,7 @@ local n_dunshi = fk.CreateViewAsSkill{
   end,
   enabled_at_response = function(self, player, response)
     if player:usedSkillTimes(self.name, Player.HistoryTurn) > 0 then return false end
-    local mark = U.getMark(player, "n_dunshi")
+    local mark = player:getTableMark("n_dunshi")
     for _, name in ipairs(n_dunshi_names) do
       if not table.contains(mark, name) then
         local to_use = Fk:cloneCard(name)
@@ -463,7 +463,7 @@ local n_dunshi_record = fk.CreateTriggerSkill{
     }
     local chosen = {}
     for i = 1, 2, 1 do
-      local delete_mark = U.getMark(player, "n_dunshi")
+      local delete_mark = player:getTableMark("n_dunshi")
       local all_choices = {"n_dunshi1:"..target.id, "n_dunshi2:::"..#delete_mark, "n_dunshi3:::"..card_name}
       local choices = table.filter(all_choices, function(c)
         return not table.find(chosen, function(index) return c:startsWith("n_dunshi"..index) end)
@@ -517,7 +517,7 @@ local n_dunshi_record = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     if event == fk.EventAcquireSkill then
-      local delete_mark = U.getMark(player, "n_dunshi")
+      local delete_mark = player:getTableMark("n_dunshi")
       local names = table.filter(n_dunshi_names, function(n)
         return not table.contains(delete_mark, n)
       end)
@@ -633,7 +633,7 @@ local dianlun = fk.CreateTriggerSkill{
       'n_cc_gongzhen',
     }
     local female = table.filter(room:getOtherPlayers(player), function(p)
-      return p.gender == General.Female
+      return p:isFemale()
     end)
     if #female == 0 then
       table.removeOne(classic, 'n_cc_gongzhen')
@@ -1270,7 +1270,7 @@ local yingfa = fk.CreateActiveSkill{
     end
     if #dads == 0 then return end
     local dad = table.random(dads)
-    local mark = U.getMark(player, "n_yingfa_target")
+    local mark = player:getTableMark("n_yingfa_target")
     table.insertIfNeed(mark, {target.id, target.deputyGeneral})
     room:setPlayerMark(player, "n_yingfa_target", mark)
     room:changeHero(target, dad, false, true, true, false)
@@ -1314,13 +1314,13 @@ local yingfa_delay = fk.CreateTriggerSkill{
   mute = true,
   can_trigger = function (self, event, target, player, data)
     if target == player then
-      return #U.getMark(player, "n_yingfa_target") > 0
+      return #player:getTableMark("n_yingfa_target") > 0
     end
   end,
   on_cost = Util.TrueFunc,
   on_use = function (self, event, target, player, data)
     local room = player.room
-    local mark = U.getMark(player, "n_yingfa_target")
+    local mark = player:getTableMark("n_yingfa_target")
     room:setPlayerMark(player, "n_yingfa_target", 0)
     for _, m in ipairs(mark) do
       local pid, dep = table.unpack(m)
