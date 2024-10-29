@@ -631,8 +631,8 @@ local n_xiaogeng = fk.CreateTriggerSkill{
     local room = player.room
     player:drawCards(1, self.name)
     if player.dead or player:isNude() or #room:getOtherPlayers(player) == 0 then return end
-    local move = U.askForDistribution(player, player:getCardIds("he"), room:getOtherPlayers(player), self.name, 1, #player:getCardIds("he"), nil, nil, true)
-    local cards = U.doDistribution(room, move, player.id, self.name)
+    local move = room:askForYiji(player, player:getCardIds("he"), room:getOtherPlayers(player), self.name, 1, #player:getCardIds("he"), nil, nil, true)
+    local cards = room:doYiji(move, player.id, self.name)
     if #cards > 1 and not player.dead then
       local names = {}
       for _, id in ipairs(cards) do
