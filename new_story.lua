@@ -390,17 +390,15 @@ local n_dunshi = fk.CreateViewAsSkill{
   interaction = function()
     local all_names, names = n_dunshi_names, {}
     local mark = Self:getMark("n_dunshi")
-    for _, name in ipairs(all_names) do
-      if type(mark) ~= "table" or not table.contains(mark, name) then
-        local to_use = Fk:cloneCard(name)
-        if ((Fk.currentResponsePattern == nil and Self:canUse(to_use) and not Self:prohibitUse(to_use)) or
-            (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(to_use))) then
-          table.insertIfNeed(names, name)
-        end
+    for _, name in ipairs(Self:getTableMark("@$n_dunshi")) do
+      local to_use = Fk:cloneCard(name)
+      if ((Fk.currentResponsePattern == nil and Self:canUse(to_use) and not Self:prohibitUse(to_use)) or
+          (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(to_use))) then
+        table.insert(names, name)
       end
     end
     if #names == 0 then return end
-    return UI.ComboBox {choices = names}
+    return U.CardNameBox {choices = names}
   end,
   card_filter = Util.FalseFunc,
   view_as = function(self, cards)
@@ -414,27 +412,28 @@ local n_dunshi = fk.CreateViewAsSkill{
   end,
   enabled_at_play = function(self, player)
     if player:usedSkillTimes(self.name, Player.HistoryTurn) > 0 then return false end
-    local mark = player:getTableMark("n_dunshi")
-    for _, name in ipairs(n_dunshi_names) do
-      if not table.contains(mark, name) then
-        local to_use = Fk:cloneCard(name)
-        if player:canUse(to_use) and not player:prohibitUse(to_use) then
-          return true
-        end
+    for _, name in ipairs(player:getTableMark("@$n_dunshi")) do
+      local to_use = Fk:cloneCard(name)
+      if player:canUse(to_use) and not player:prohibitUse(to_use) then
+        return true
       end
     end
   end,
   enabled_at_response = function(self, player, response)
     if player:usedSkillTimes(self.name, Player.HistoryTurn) > 0 then return false end
-    local mark = player:getTableMark("n_dunshi")
-    for _, name in ipairs(n_dunshi_names) do
-      if not table.contains(mark, name) then
-        local to_use = Fk:cloneCard(name)
-        if (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(to_use)) then
-          return true
-        end
+    for _, name in ipairs(player:getTableMark("@$n_dunshi")) do
+      local to_use = Fk:cloneCard(name)
+      if (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(to_use)) then
+        return true
       end
     end
+  end,
+
+  on_acquire = function (self, player)
+    player.room:setPlayerMark(player, "@$n_dunshi", n_dunshi_names)
+  end,
+  on_lose = function (self, player)
+    player.room:setPlayerMark(player, "@$n_dunshi", 0)
   end,
 }
 local n_dunshi_record = fk.CreateTriggerSkill{
@@ -443,16 +442,14 @@ local n_dunshi_record = fk.CreateTriggerSkill{
   events = {fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
     if player:usedSkillTimes("n_dunshi", Player.HistoryTurn) > 0 and target and target.phase ~= Player.NotActive then
-      if target:getMark("n_dunshi-turn") == 0 then
-        player.room:addPlayerMark(target, "n_dunshi-turn", 1)
-        return true
-      end
+      return player:getMark("n_dunshi_name-turn") ~= 0
     end
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local card_name = player:getMark("n_dunshi_name-turn")
+    room:setPlayerMark(player, "n_dunshi_name-turn", 0)
     local tech = {
       "崩",
       "急", --"集", "疾", "吉", "极", "汲",
@@ -463,8 +460,8 @@ local n_dunshi_record = fk.CreateTriggerSkill{
     }
     local chosen = {}
     for i = 1, 2, 1 do
-      local delete_mark = player:getTableMark("n_dunshi")
-      local all_choices = {"n_dunshi1:"..target.id, "n_dunshi2:::"..#delete_mark, "n_dunshi3:::"..card_name}
+      local delete_num = #n_dunshi_names - #player:getTableMark("@$n_dunshi")
+      local all_choices = {"n_dunshi1:"..target.id, "n_dunshi2:::"..delete_num, "n_dunshi3:::"..card_name}
       local choices = table.filter(all_choices, function(c)
         return not table.find(chosen, function(index) return c:startsWith("n_dunshi"..index) end)
       end)
@@ -473,11 +470,12 @@ local n_dunshi_record = fk.CreateTriggerSkill{
       if choice:startsWith("n_dunshi1") then
         local skills = {}
         for _, general in ipairs(Fk:getAllGenerals()) do
-          for _, skill in ipairs(general.skills) do
-            local str = Fk:translate(skill.name)
+          for _, skillName in ipairs(general:getSkillNameList()) do
+            local skill = Fk.skills[skillName]
+            local str = Fk:translate(skillName)
             if table.find(tech, function(s) return string.find(str, s) end) then
               local name = skill.name
-              if not target:hasSkill("n_yingma") and (target:hasSkill(skill) or string.find(name, "&")) then
+              if not target:hasSkill("n_yingma", true) and (target:hasSkill(skill) or string.find(name, "&")) then
                 name = "n_yingma"
               end
               if not target:hasSkill(name, true) then
@@ -492,38 +490,15 @@ local n_dunshi_record = fk.CreateTriggerSkill{
         end
       elseif choice:startsWith("n_dunshi2") then
         room:changeMaxHp(player, -1)
-        if not player.dead and player:getMark("n_dunshi") ~= 0 then
-          player:drawCards(#player:getMark("n_dunshi"), "n_dunshi")
+        if not player.dead and delete_num ~= 0 then
+          player:drawCards(delete_num, "n_dunshi")
         end
       elseif choice:startsWith("n_dunshi3") then
-        table.insert(delete_mark, card_name)
-        room:setPlayerMark(player, "n_dunshi", delete_mark)
-
-        local UImark = player:getMark("@$n_dunshi")
-        if type(UImark) == "table" then
-          table.removeOne(UImark, card_name)
-          room:setPlayerMark(player, "@$n_dunshi", UImark)
-        end
+        room:removeTableMark(player, "@$n_dunshi", card_name)
       end
     end
     if table.contains(chosen, 1) then
       return true
-    end
-  end,
-
-  refresh_events = {fk.EventLoseSkill, fk.EventAcquireSkill},
-  can_refresh = function(self, event, target, player, data)
-    return player == target and data == self
-  end,
-  on_refresh = function(self, event, target, player, data)
-    if event == fk.EventAcquireSkill then
-      local delete_mark = player:getTableMark("n_dunshi")
-      local names = table.filter(n_dunshi_names, function(n)
-        return not table.contains(delete_mark, n)
-      end)
-      player.room:setPlayerMark(player, "@$n_dunshi", names)
-    else
-      player.room:setPlayerMark(player, "@$n_dunshi", 0)
     end
   end,
 }
@@ -660,7 +635,7 @@ local dianlun = fk.CreateTriggerSkill{
       local tgt = room:getPlayerById(to)
 
       player:broadcastSkillInvoke(self.name, 1)
-      room:notifySkillInvoked(player, 'n_cc_lunying', 'special')
+      room:notifySkillInvoked(player, 'n_cc_lunying', 'special', {to})
 
       while true do
         if player.dead then break end
@@ -718,7 +693,7 @@ local dianlun = fk.CreateTriggerSkill{
       local tgt = room:getPlayerById(to)
 
       player:broadcastSkillInvoke(self.name, 3)
-      room:notifySkillInvoked(player, 'n_cc_duoqi', 'control')
+      room:notifySkillInvoked(player, 'n_cc_duoqi', 'control', {to})
 
       local skills = Fk.generals[tgt.general]:getSkillNameList()
       if Fk.generals[tgt.deputyGeneral] and Fk.generals[tgt.deputyGeneral].gender == General.Female then
@@ -740,9 +715,9 @@ local dianlun = fk.CreateTriggerSkill{
       local tgt = room:getPlayerById(to)
 
       player:broadcastSkillInvoke(self.name, 4)
-      room:notifySkillInvoked(player, 'n_cc_sanxiao', 'masochism')
+      room:notifySkillInvoked(player, 'n_cc_sanxiao', 'masochism', {to})
 
-      local use = room:askForUseCard(tgt, "slash", nil, "#n_cc_sanxiao-use:"..player.id, false, {
+      local use = room:askForUseCard(tgt, "slash", nil, "#n_cc_sanxiao-use:"..player.id, true, {
         must_targets = { player.id },
         bypass_distances = true,
       })
@@ -758,7 +733,7 @@ local dianlun = fk.CreateTriggerSkill{
       local tgt = room:getPlayerById(to)
 
       player:broadcastSkillInvoke(self.name, 5)
-      room:notifySkillInvoked(player, 'n_cc_jiamei', 'offensive')
+      room:notifySkillInvoked(player, 'n_cc_jiamei', 'offensive', {to})
 
       tgt:drawCards(1, self.name)
       room:useVirtualCard('slash', nil, player, tgt, self.name, true)
@@ -768,7 +743,7 @@ local dianlun = fk.CreateTriggerSkill{
       local tgt = room:getPlayerById(to)
 
       player:broadcastSkillInvoke(self.name, 6)
-      room:notifySkillInvoked(player, 'n_cc_gongzhen', 'control')
+      room:notifySkillInvoked(player, 'n_cc_gongzhen', 'control', {to})
 
       player:drawCards(1, self.name)
       if not tgt.dead then
