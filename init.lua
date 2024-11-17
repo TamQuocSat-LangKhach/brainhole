@@ -857,6 +857,7 @@ Fk:loadTranslationTable{
 
 local ralph = General(extension, "n_ralph", "n_pigeon", 3)
 ralph.gender = General.Female
+ralph.trueName = "th_kogasa"
 local n_subian = fk.CreateActiveSkill{
   name = "n_subian",
   anim_type = "drawcard",
