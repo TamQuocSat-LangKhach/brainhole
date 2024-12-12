@@ -42,9 +42,7 @@ local n_jianliang = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self) and #player.room:getCardsFromPileByRule("peach") > 0
   end,
-  on_cost = function(self, event, target, player, data)
-    return true
-  end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local bigNumber = #room.draw_pile
@@ -551,9 +549,6 @@ local jianxiong = fk.CreateTriggerSkill{
   name = "n_jianxiong",
   anim_type = "masochism",
   events = {fk.Damaged},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
-  end,
   on_cost = function(self, event, target, player, data)
     local choices = {'n_jianxiong_draw'}
     if data.card and target.room:getCardArea(data.card) == Card.Processing then
@@ -827,9 +822,7 @@ local luoyi_trigger = fk.CreateTriggerSkill{
       ((player:getMark("@@n_luoyi") > 0 and (data.card.trueName == "slash" or data.card.name == "duel")) or
       (player:hasSkill(luoyi) and #player:getCardIds("e") == 0 and data.card.name == "slash"))
   end,
-  on_cost = function(self, event, target, player, data)
-    return true
-  end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke("n_luoyi")
