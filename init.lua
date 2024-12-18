@@ -1861,10 +1861,19 @@ local liusha = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local to = data.from
+    local toId = data.from
+    local to = room:getPlayerById(toId)
     room:throwCard(self.cost_data, self.name, player, player)
-    AimGroup:cancelTarget(data, player.id)
-    AimGroup:addTargets(room, data, to)
+    local choices ={ "n_liusha_choice1" }
+    if not to:isNude() then table.insert(choices, "n_liusha_choice2") end
+    local choice = room:askForChoice(player, choices, self.name)
+    if choice == "n_liusha_choice1" then
+      AimGroup:cancelTarget(data, player.id)
+      AimGroup:addTargets(room, data, toId)
+    else
+      local c = room:askForCardChosen(player, to, "he", self.name)
+      room:obtainCard(player, c, false, fk.ReasonPrey, player.id)
+    end
   end,
 }
 shaheshang:addSkill(liusha)
@@ -1899,6 +1908,7 @@ local kuli = fk.CreateTriggerSkill{
     for _, st in ipairs(equip_subtypes) do
       if not player:hasEmptyEquipSlot(st) then
         room:addPlayerEquipSlots(player, Util.convertSubtypeAndEquipSlot(st))
+        player:drawCards(2, self.name)
       end
     end
   end,
@@ -1910,10 +1920,12 @@ Fk:loadTranslationTable{
   ["designer:n_shaheshang"] = "西游杀",
   ["illustrator:n_shaheshang"] = "",
   ["n_liusha"] = "流沙",
-  [":n_liusha"] = "当你成为普通锦囊牌的目标时，若使用者不是目标，你可以弃置一张方块牌，将此牌目标转移给使用者。",
-  ["#n_liusha"] = "流沙：你可以弃置一张方块牌，将此牌目标转移给使用者",
+  [":n_liusha"] = "当你成为普通锦囊牌的目标时，若使用者不是目标，你可以弃置一张方块牌并选择：1.将目标转移给使用者；2.获得使用者一张牌。",
+  ["#n_liusha"] = "流沙：你可以弃置一张方块牌，将此牌目标转移给使用者或者获得其一张牌",
+  ["n_liusha_choice1"] = "将目标转移给使用者",
+  ["n_liusha_choice2"] = "获得使用者一张牌",
   ["n_kuli"] = "苦力",
-  [":n_kuli"] = "锁定技，当牌进入你的装备区后，若你缺少某种类别的空置装备栏，你获得一个额外的对应类别的装备栏。" ..
+  [":n_kuli"] = "锁定技，当牌进入你的装备区后，你每缺少某种类别的空置装备栏，便获得一个额外的对应类别的装备栏并摸两张牌。" ..
   "<br><font color='gray'>注：UI未适配多装备栏，需要等待游戏软件版本更新，请勿反馈显示问题。</font>",
 }
 
