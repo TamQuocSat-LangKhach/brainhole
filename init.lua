@@ -1835,6 +1835,88 @@ Fk:loadTranslationTable{
   ["~n_guojicheng"] = "你怎么可以骂老师…",
 }
 
+local shaheshang = General:new(extension, "n_shaheshang", "god", 3)
+local liusha = fk.CreateTriggerSkill{
+  name = "n_liusha",
+  anim_type = "defensive",
+  events = {fk.TargetConfirming},
+  ---@param data AimStruct
+  can_trigger = function(self, event, target, player, data)
+    local ret = target == player and player:hasSkill(self) and
+      data.card:getSubtypeString() == "normal_trick" and
+      not TargetGroup:includeRealTargets(data.tos, data.from)
+
+    if ret then
+      return not player:isAllNude()
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local prompt = "#n_liusha"
+    local cards = room:askForDiscard(player, 1, 1, true, self.name, true, ".|.|diamond", prompt, true)
+    if #cards > 0 then
+      self.cost_data = cards
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = data.from
+    room:throwCard(self.cost_data, self.name, player, player)
+    AimGroup:cancelTarget(data, player.id)
+    AimGroup:addTargets(room, data, to)
+  end,
+}
+shaheshang:addSkill(liusha)
+local equip_subtypes = {
+  Card.SubtypeWeapon,
+  Card.SubtypeArmor,
+  Card.SubtypeDefensiveRide,
+  Card.SubtypeOffensiveRide,
+  Card.SubtypeTreasure
+}
+local kuli = fk.CreateTriggerSkill{
+  name = "n_kuli",
+  anim_type = "support",
+  frequency = Skill.Compulsory,
+  events = {fk.AfterCardsMove},
+  ---@param data CardsMoveStruct[]
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self) then return end
+    for _, move in ipairs(data) do
+      if move.to == player.id and move.toArea == Card.PlayerEquip then
+        for _, st in ipairs(equip_subtypes) do
+          if not player:hasEmptyEquipSlot(st) then
+            return true
+          end
+        end
+        return false
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    for _, st in ipairs(equip_subtypes) do
+      if not player:hasEmptyEquipSlot(st) then
+        room:addPlayerEquipSlots(player, Util.convertSubtypeAndEquipSlot(st))
+      end
+    end
+  end,
+}
+shaheshang:addSkill(kuli)
+Fk:loadTranslationTable{
+  ["n_shaheshang"] = "沙和尚",
+  ["#n_shaheshang"] = "任劳任怨",
+  ["designer:n_shaheshang"] = "西游杀",
+  ["illustrator:n_shaheshang"] = "",
+  ["n_liusha"] = "流沙",
+  [":n_liusha"] = "当你成为普通锦囊牌的目标时，若使用者不是目标，你可以弃置一张方块牌，将此牌目标转移给使用者。",
+  ["#n_liusha"] = "流沙：你可以弃置一张方块牌，将此牌目标转移给使用者",
+  ["n_kuli"] = "苦力",
+  [":n_kuli"] = "锁定技，当牌进入你的装备区后，若你缺少某种类别的空置装备栏，你获得一个额外的对应类别的装备栏。" ..
+  "<br><font color='gray'>注：UI未适配多装备栏，需要等待游戏软件版本更新，请勿反馈显示问题。</font>",
+}
+
 local extension_card = Package("brainhole_cards", Package.CardPack)
 
 local brickSkill = fk.CreateActiveSkill{
