@@ -879,9 +879,7 @@ local n_subian = fk.CreateActiveSkill{
     local toGain = room:printCard(card.name, card.suit, card.number)
     room:obtainCard(player, toGain, true, fk.ReasonPrey)
     -- room:setCardMark(toGain, "@@n_subian", 1)
-    local mark = player:getTableMark("n_subian-turn")
-    table.insert(mark, toGain.id)
-    room:setPlayerMark(player, "n_subian-turn", mark)
+    room:addTableMark(player, "n_subian-turn", toGain.id)
   end,
 }
 ralph:addSkill(n_subian)
