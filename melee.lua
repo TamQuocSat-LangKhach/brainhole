@@ -13,9 +13,10 @@ local description = [[
 
 - 回合外的角色也能像普通的出牌阶段那样选择使用牌或者使用技能。
 - 所有角色的行动受到气力的约束。回合外行动减5气力，回合内减1气力。
-- “混战”开始时，所有角色气力+5（当前回合角色的气力再+5）。
-- “混战”过程中，气力不少于3的所有角色同时选择行动。手速较快的优先结算。
+- “混战”开始时，所有角色气力+5（当前回合角色的气力再+5）。上限为20。
+- “混战”过程中，气力不少于5的所有角色同时选择行动。手速较快的优先结算。
 - 所有卡牌使用、技能使用的相关结算结束后，再结算气力值变动。
+- 若回合内角色行动，则所有回合外的角色气力+1，否则回合内角色气力+1。
 
 此外，若当前回合的角色死亡，则“混战”结束。
 
@@ -85,7 +86,7 @@ local function changeEnergy(p, n)
   local e = p:getMark("@melee_energy")
   e = e + n
   e = math.max(e, 0)
-  e = math.min(e, 40)
+  e = math.min(e, 20)
   p.room:setPlayerMark(p, "@melee_energy", e)
 end
 
@@ -133,8 +134,12 @@ local melee_rule = fk.CreateTriggerSkill{
         room:useCard(useResult)
       end
       changeEnergy(p, delta)
-      for _, p2 in ipairs(room:getOtherPlayers(p)) do
-        changeEnergy(p2, 1)
+      if p == player then
+        for _, p2 in ipairs(room:getOtherPlayers(p)) do
+          changeEnergy(p2, 1)
+        end
+      else
+        changeEnergy(player, 1)
       end
     end
     return true
