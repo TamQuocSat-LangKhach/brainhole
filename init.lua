@@ -307,7 +307,7 @@ local n_fudu = fk.CreateTriggerSkill{
     if target.dead then
       return
     end
-    return U.canUseCardTo(room, player, target, card, false, false)
+    return player:canUseTo(card, target, { bypass_times = true, bypass_distances = true })
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -1863,6 +1863,7 @@ local liusha = fk.CreateTriggerSkill{
     local toId = data.from
     local to = room:getPlayerById(toId)
     room:throwCard(self.cost_data, self.name, player, player)
+    if player.dead then return end
     local choices ={ "n_liusha_choice1" }
     if not to:isNude() then table.insert(choices, "n_liusha_choice2") end
     local choice = room:askForChoice(player, choices, self.name)
@@ -1907,7 +1908,7 @@ local kuli = fk.CreateTriggerSkill{
     for _, st in ipairs(equip_subtypes) do
       if not player:hasEmptyEquipSlot(st) then
         room:addPlayerEquipSlots(player, Util.convertSubtypeAndEquipSlot(st))
-        player:drawCards(2, self.name)
+        if player:isAlive() then player:drawCards(2, self.name) end
       end
     end
   end,
