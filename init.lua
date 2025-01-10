@@ -478,7 +478,7 @@ local kuiping = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    local victim = table.find(room.players, function(p) return p.seat == 1 end)
+    local victim = room:getPlayerBySeat(1)
     if not victim then return end
     if event == fk.EventAcquireSkill then
       player:addBuddy(victim)
