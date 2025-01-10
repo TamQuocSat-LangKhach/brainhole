@@ -199,7 +199,7 @@ local n_lingxiu = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self) then return end
     local room = player.room
-    if #table.filter(room:getOtherPlayers(player), function(p)
+    if #table.filter(room:getOtherPlayers(player, false), function(p)
       return #p:getCardIds(Player.Hand) > #player:getCardIds(Player.Hand)
     end) == 0 then return end
 
@@ -213,7 +213,7 @@ local n_lingxiu = fk.CreateTriggerSkill{
     -- player.room:delay(240)
     local room = player.room
     local goal = 0
-    for _, p in ipairs(room:getOtherPlayers(player)) do
+    for _, p in ipairs(room:getOtherPlayers(player, false)) do
       goal = math.max(goal, p:getHandcardNum())
     end
     player:drawCards(goal - player:getHandcardNum(), self.name)
@@ -559,7 +559,7 @@ local huanmeng = fk.CreateTriggerSkill{
   -- mute = true,
   events = {fk.Damaged},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and not table.find(player.room:getOtherPlayers(player), function(p)
+    return target == player and player:hasSkill(self) and not table.find(player.room:getOtherPlayers(player, false), function(p)
       return p.hp < player.hp
     end)
   end,
@@ -631,8 +631,8 @@ local n_xiaogeng = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:drawCards(1, self.name)
-    if player.dead or player:isNude() or #room:getOtherPlayers(player) == 0 then return end
-    local move = room:askForYiji(player, player:getCardIds("he"), room:getOtherPlayers(player), self.name, 1, #player:getCardIds("he"), nil, nil, true)
+    if player.dead or player:isNude() or #room:getOtherPlayers(player, false) == 0 then return end
+    local move = room:askForYiji(player, player:getCardIds("he"), room:getOtherPlayers(player, false), self.name, 1, #player:getCardIds("he"), nil, nil, true)
     local cards = room:doYiji(move, player.id, self.name)
     if #cards > 1 and not player.dead then
       local names = {}
@@ -1358,6 +1358,8 @@ local n_pengji = fk.CreateTriggerSkill{
 }
 n_xujiale:addSkill(n_pengji)
 
+---@param player ServerPlayer
+---@param move CardsMoveStruct
 local function songjiCheckMove(player, move)
   local cards = player:getMark("n_pengji_dis")
   local valid = {}
@@ -1369,11 +1371,12 @@ local function songjiCheckMove(player, move)
   return valid
 end
 
+---@param player ServerPlayer
 local function songjiCanUse(player)
   local canSlash = not player:prohibitUse(Fk:cloneCard("slash"))
   local canPeach = not player:prohibitUse(Fk:cloneCard("peach"))
 
-  canSlash = canSlash and table.find(player.room:getOtherPlayers(player), function(p)
+  canSlash = canSlash and table.find(player.room:getOtherPlayers(player, false), function(p)
     return player:inMyAttackRange(p) and
       not player:isProhibited(p, Fk:cloneCard("slash"))
   end)
@@ -1418,7 +1421,6 @@ local n_songji = fk.CreateTriggerSkill{
       tostring(Exppattern{ id = ids }), "@n_songji")
 
     if #c == 0 then return end
-    c = c[1]
 
     local choices = {}
     local s, p = songjiCanUse(player)
@@ -1429,13 +1431,13 @@ local n_songji = fk.CreateTriggerSkill{
 
     if choice == "peach" then
       self.cost_data = {
-        card = c,
+        cards = c,
         cname = choice,
-        target = player.id,
+        tos = {player.id},
       }
       return true
     elseif choice == "slash" then
-      local targets = table.filter(room:getOtherPlayers(player), function(p)
+      local targets = table.filter(room:getOtherPlayers(player, false), function(p)
         return player:inMyAttackRange(p) and
           not player:isProhibited(p, Fk:cloneCard("slash"))
       end)
@@ -1445,9 +1447,9 @@ local n_songji = fk.CreateTriggerSkill{
 
       if #p2 ~= 0 then
         self.cost_data = {
-          card = c,
+          cards = c,
           cname = choice,
-          target = p2[1],
+          tos = p2,
         }
         return true
       end
@@ -1460,9 +1462,9 @@ local n_songji = fk.CreateTriggerSkill{
     local dat = self.cost_data
 
     use.from = player.id
-    use.tos = { { dat.target } }
+    use.tos = { dat.tos }
     local card = Fk:cloneCard(dat.cname)
-    card:addSubcard(dat.card)
+    card:addSubcard(dat.cards[1])
     card.skillName = self.name
     use.card = card
     use.extraUse = true
@@ -1508,15 +1510,7 @@ local yaoyin = fk.CreateActiveSkill{
     return #selected == 0 and Fk:currentRoom():getCardArea(to_select) ~= Card.PlayerEquip
   end,
   target_filter = function(self, to_select, selected)
-    -- TODO: 客户端getNextAlive
-
-    local t = Fk:currentRoom():getPlayerById(to_select)
-    local ret = t.next
-    while ret.dead do
-      ret = ret.next
-    end
-
-    return #selected == 0 and to_select ~= Self.id and ret ~= Self
+    return #selected == 0 and to_select ~= Self.id and Fk:currentRoom():getPlayerById(to_select):getNextAlive() ~= Self
   end,
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
@@ -1595,6 +1589,7 @@ local n_suijie = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local room = player.room
     if room:askForSkillInvoke(player, self.name, nil, "#n_suijie_ask:" .. data.from) then
+      self.cost_data = {tos = { data.from } }
       return true
     end
   end,
@@ -1603,7 +1598,7 @@ local n_suijie = fk.CreateTriggerSkill{
     local from = room:getPlayerById(data.from)
     from:drawCards(1, self.name)
     local a, b = player:getHandcardNum(), from:getHandcardNum()
-    if a < b  then
+    if a < b and player:isAlive() then
       player:drawCards(b - a, self.name)
     end
   end,
@@ -1630,7 +1625,7 @@ local n_jujie = fk.CreateTriggerSkill{
         ".", "#n_jujie_ask::" .. data.from .. ":" .. data.card.name, true)
 
       if #ids > 0 then
-        self.cost_data = ids[1]
+        self.cost_data = {cards = ids}
         return true
       end
     else
@@ -1640,7 +1635,7 @@ local n_jujie = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.TargetConfirmed then
-      room:throwCard(self.cost_data, self.name, player, player)
+      room:throwCard(self.cost_data.cards, self.name, player, player)
       local e = room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
       e.n_jujie_list = e.n_jujie_list or {}
       e.n_jujie_list[player.id] = true
@@ -1727,16 +1722,14 @@ local chunzhen = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-
+    player:broadcastSkillInvoke(self.name)
     if event == fk.AfterCardTargetDeclared then
-      player:broadcastSkillInvoke(self.name)
       room:notifySkillInvoked(player, self.name, "special")
       local tos = room:askForChoosePlayers(player, TargetGroup:getRealTargets(data.tos), 1, 1,
         "#n_chunzhen-choose", self.name, false)
       TargetGroup:removeTarget(data.tos, tos[1])
       room:addPlayerMark(player, "@n_chunzhen", 1)
     else
-      player:broadcastSkillInvoke(self.name)
       room:notifySkillInvoked(player, self.name, "defensive")
       room:removePlayerMark(player, "@n_chunzhen", 1)
       data.damage = data.damage - 1
@@ -1960,7 +1953,7 @@ local brickSkill = fk.CreateActiveSkill{
     if #cards > 0 and not to.dead then
       room:obtainCard(to, effect.card, true, fk.ReasonGive, from.id)
     end
-    if to.dead then return false end
+    if to.dead or from.dead then return false end
     room:damage({
       from = from,
       to = to,
@@ -2001,7 +1994,7 @@ local relxSkill = fk.CreateTriggerSkill{
     local x = #AimGroup:getAllTargets(data.tos)
     room:notifySkillInvoked(player, "n_relx_v", "drawcard")
     player:drawCards(x, self.name)
-    if x > 1 then room:damage { from = player, to = player, damage = 1, damageType = fk.ThunderDamage } end
+    if x > 1 and player:isAlive() then room:damage { from = player, to = player, damage = 1, damageType = fk.ThunderDamage } end
   end,
 }
 Fk:addSkill(relxSkill)
@@ -2024,7 +2017,7 @@ Fk:loadTranslationTable{
   ["n_relx_v"] = "悦刻五",
   [":n_relx_v"] = "装备牌·宝物<br />" ..
     "<b>宝物技能</b>：锁定技，当你使用非装备牌指定目标后，若你没有" ..
-    "红色基本牌，你摸X张牌，然后若X>1，你对自己造成一点雷属性伤害（X为此牌指定的目标数）。<br />" ..
+    "红色基本牌，你摸X张牌，然后若X>1，你对自己造成1点雷属性伤害（X为此牌指定的目标数）。<br />" ..
     '<font color="grey"><small>都什么年代了还在抽传统焉？</small></font>',
 }
 

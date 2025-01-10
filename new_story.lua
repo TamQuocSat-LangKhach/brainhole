@@ -138,7 +138,7 @@ local n_huiwan = fk.CreateActiveSkill{
     }
   end,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name) == 0
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
   on_use = function(self, room, effect)
     local from = room:getPlayerById(effect.from)
@@ -151,6 +151,7 @@ local n_huiwan = fk.CreateActiveSkill{
       end
     end
     room:throwCard(effect.cards, self.name, from, from)
+    if from.dead then return end
 
     local total = #effect.cards + (more and 1 or 0)
     local choice = self.interaction.data
@@ -387,7 +388,6 @@ local n_dunshi = fk.CreateViewAsSkill{
   pattern = table.concat(n_dunshi_names, ","),
   interaction = function()
     local all_names, names = n_dunshi_names, {}
-    local mark = Self:getMark("n_dunshi")
     for _, name in ipairs(Self:getTableMark("@$n_dunshi")) do
       local to_use = Fk:cloneCard(name)
       if ((Fk.currentResponsePattern == nil and Self:canUse(to_use) and not Self:prohibitUse(to_use)) or
@@ -602,7 +602,7 @@ local dianlun = fk.CreateTriggerSkill{
       'n_cc_jiamei',
       'n_cc_gongzhen',
     }
-    local female = table.filter(room:getOtherPlayers(player), function(p)
+    local female = table.filter(room:getOtherPlayers(player, false), function(p)
       return p:isFemale()
     end)
     if #female == 0 then
@@ -625,7 +625,7 @@ local dianlun = fk.CreateTriggerSkill{
 
     if choice == 'n_cc_lunying' then
       local to = room:askForChoosePlayers(player,
-        table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1,
+        table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1,
         '#n_cc_lunying', self.name, false)[1]
       local tgt = room:getPlayerById(to)
 
@@ -705,7 +705,7 @@ local dianlun = fk.CreateTriggerSkill{
       end
     elseif choice == 'n_cc_sanxiao' then
       local to = room:askForChoosePlayers(player,
-        table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1,
+        table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1,
         '#n_cc_sanxiao', self.name, false)[1]
       local tgt = room:getPlayerById(to)
 
@@ -723,7 +723,7 @@ local dianlun = fk.CreateTriggerSkill{
       end
     elseif choice == 'n_cc_jiamei' then
       local to = room:askForChoosePlayers(player,
-        table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1,
+        table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1,
         '#n_cc_jiamei', self.name, false)[1]
       local tgt = room:getPlayerById(to)
 
@@ -960,7 +960,7 @@ local yixiao = fk.CreateTriggerSkill{
         return true
       end
     else
-      local tos = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#n_yixiao-choose", self.name, false)
+      local tos = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, "#n_yixiao-choose", self.name, false)
       if #tos > 0 then
         self.cost_data = tos
         return true
@@ -978,7 +978,7 @@ local yixiao = fk.CreateTriggerSkill{
       tgt:broadcastSkillInvoke(self.name, table.random{ 5, 6 })
       room:useCard(self.cost_data)
       to = room:askForChoosePlayers(player, table.map(
-        table.filter(room:getOtherPlayers(player), function(p)
+        table.filter(room:getOtherPlayers(player, false), function(p)
           return p:getMark("@@n_yifu") == 0 and p ~= player
         end)
       ,Util.IdMapper), 1, 1, "#n_yixiao-move", self.name, false)[1]
