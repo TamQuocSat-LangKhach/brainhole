@@ -1933,16 +1933,15 @@ local brickSkill = fk.CreateActiveSkill{
     end)
   end,
   target_num = 1,
-  mod_target_filter = function(self, to_select, selected, user, card, distance_limited)
+  mod_target_filter = function(self, to_select, selected, from, card, distance_limited)
     local player = Fk:currentRoom():getPlayerById(to_select)
-    local from = Fk:currentRoom():getPlayerById(user)
     return from ~= player and not (distance_limited and not self:withinDistanceLimit(from, true, card, player))
   end,
-  target_filter = function(self, to_select, selected, _, card, extra_data)
-    if #selected < self:getMaxTargetNum(Self, card) then
-      local player = Fk:currentRoom():getPlayerById(to_select)
-      return self:modTargetFilter(to_select, selected, Self.id, card, true) and
-      (#selected > 0 or self:withinTimesLimit(Self, Player.HistoryRound, card, "n_brick", player)
+  target_filter = function(self, to_select, selected, _, card, extra_data, player)
+    if Util.TargetFilter(self, to_select, selected, _, card, extra_data, player) then
+      local target = Fk:currentRoom():getPlayerById(to_select)
+      return self:modTargetFilter(to_select, selected, player, card, true) and
+      (#selected > 0 or self:withinTimesLimit(player, Player.HistoryRound, card, "n_brick", target)
       or (extra_data and extra_data.bypass_times))
     end
   end,
