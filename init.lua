@@ -482,7 +482,7 @@ local kuiping = fk.CreateTriggerSkill{
     if not victim then return end
     if event == fk.EventAcquireSkill then
       player:addBuddy(victim)
-    elseif event == fk.EventAcquireSkill then
+    elseif event == fk.EventLoseSkill then
       player:removeBuddy(victim)
     end
   end,
