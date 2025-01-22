@@ -469,21 +469,15 @@ local chonggou = fk.CreateTriggerSkill{
   end,
 }
 xxyheaven:addSkill(chonggou)
-local kuiping = fk.CreateTriggerSkill{
-  name = 'n_kuiping',
+local kuiping = fk.CreateVisibilitySkill{
+  name = "n_kuiping",
   frequency = Skill.Compulsory,
-  refresh_events = {fk.EventAcquireSkill, fk.EventLoseSkill},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and data == self
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    local victim = room:getPlayerBySeat(1)
-    if not victim then return end
-    if event == fk.EventAcquireSkill then
-      player:addBuddy(victim)
-    elseif event == fk.EventLoseSkill then
-      player:removeBuddy(victim)
+  card_visible = function(self, player, card)
+    if player:hasSkill(self) then
+      local owner = Fk:currentRoom():getCardOwner(card.id)
+      if owner and owner.seat == 1 then
+        return true
+      end
     end
   end,
 }
