@@ -3,6 +3,7 @@ extension.extensionName = "brainhole"
 
 Fk:loadTranslationTable{
   ["brainhole_new_story"] = "脑洞-新的故事",
+  ["nd_story"] = "新的故事",
 }
 
 local U = require "packages/utility/utility"
@@ -542,6 +543,121 @@ Fk:loadTranslationTable{
   ["$n_dunshi1"] = "天下皆黑，于我独白。",
   ["$n_dunshi2"] = "我不忿世，唯炖之而自觞。",
   ["~n_guanning"] = "近城远山，皆是人间。",
+}
+
+local pengtuo = General:new(extension, "nd_story__pengtuo", "qun", 3)
+local fuji = fk.CreateTriggerSkill{
+  name = "n_fuji",
+  anim_type = "support",
+  events = { fk.CardUseFinished },
+  ---@param data CardUseStruct
+  can_trigger = function(self, event, target, player, data)
+    if not (target == player and player:hasSkill(self)) then return end
+    local card = data.card
+    local room = player.room
+    if card:isVirtual() then return end
+    local owner = room:getCardOwner(data.card.id)
+    return owner == nil or owner == player
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:askForChoosePlayers(player, table.map(room.alive_players, Util.IdMapper), 1, 1,
+      "#n_fuji-card:::"..data.card:toLogString(), self.name, true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cards = Card:getIdList(data.card)
+    local to = room:getPlayerById(self.cost_data)
+    room:moveCardTo(cards, Card.PlayerHand, to, fk.ReasonGive, self.name, nil, true, player.id)
+    room:askForDiscard(to, 1, 1, true, self.name, false)
+    if to == player then room:invalidateSkill(player, self.name, "-turn") end
+  end,
+}
+pengtuo:addSkill(fuji)
+local poulian = fk.CreateTriggerSkill{
+  name = "n_poulian",
+  anim_type = "control",
+  events = {fk.BeforeCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self) then return false end
+    local room = player.room
+    local guzheng_pairs = {}
+    for _, move in ipairs(data) do
+      if move.toArea == Card.PlayerHand and move.to and move.to ~= player.id and
+        not table.contains(room:getPlayerById(move.to):getTableMark(self.name), player.id) then
+        guzheng_pairs[move.to] = (guzheng_pairs[move.to] or 0) + #move.moveInfo
+      end
+    end
+    for key, value in pairs(guzheng_pairs) do
+      if value > 1 then
+        return true
+      end
+    end
+  end,
+  on_trigger = function(self, event, target, player, data)
+    local room = player.room
+    local targets = {}
+    local guzheng_pairs = {}
+    for _, move in ipairs(data) do
+      if move.toArea == Card.PlayerHand and move.to and move.to ~= player.id and
+        not table.contains(room:getPlayerById(move.to):getTableMark(self.name), player.id) then
+        guzheng_pairs[move.to] = (guzheng_pairs[move.to] or 0) + #move.moveInfo
+      end
+    end
+    for key, value in pairs(guzheng_pairs) do
+      if value > 1 then
+        table.insertIfNeed(targets, key)
+      end
+    end
+    room:sortPlayersByAction(targets)
+    for _, target_id in ipairs(targets) do
+      if not player:hasSkill(self) then break end
+      local skill_target = room:getPlayerById(target_id)
+      self.cost_data = guzheng_pairs[target_id]
+      self:doCost(event, skill_target, player, data)
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, data, "#n_poulian::" .. target.id .. ":" .. self.cost_data)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:doIndicate(player.id, {target.id})
+    for _, move in ipairs(data) do
+      if move.to == target.id then
+        -- room:loseHp(player, 1, self.name)
+        local mark = target:getTableMark(self.name)
+        table.insert(mark, player.id)
+        room:setPlayerMark(target, self.name, mark)
+        move.to = player.id
+        break
+      end
+    end
+  end,
+
+  refresh_events = {fk.EnterDying},
+  can_refresh = function(self, event, target, player, data)
+    return target == player
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, self.name, {})
+  end,
+}
+pengtuo:addSkill(poulian)
+Fk:loadTranslationTable{
+  ["nd_story__pengtuo"] = "彭脱",
+  ["designer:nd_story__pengtuo"] = "notify",
+
+  ["n_fuji"] = "蜉济",
+  [":n_fuji"] = "当你使用非转化非虚拟的牌结算完成后，你可以将其交给一名角色，然后其弃置一张牌，若交给自己，本回合内此技能失效。",
+  ["#n_fuji-card"] = "蜉济：你可以将 %arg 交给一名角色，若交给自己则本回合此技能失效",
+  ["n_poulian"] = "裒敛",
+  [":n_poulian"] = "当其他角色一次性获得不少于两张牌时，你可以改为由你获得它们，然后不能再对其发动此技能直到其进入濒死状态。",
+  ["#n_poulian"] = "裒敛：%dest 即将获得 %arg 张牌，是否改为由你获得？",
 }
 
 local caocao = General(extension, "n_jz__caocao", "wei", 4)
