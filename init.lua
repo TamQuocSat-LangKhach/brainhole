@@ -1,5 +1,6 @@
 local extension = Package("brainhole")
 extension:addGameMode(require "packages.brainhole.melee")
+extension:addGameMode(require "packages.brainhole.samemode")
 
 Fk:loadTranslationTable{
   ["brainhole"] = "脑洞包",
