@@ -660,6 +660,10 @@ Fk:loadTranslationTable{
   ["#n_poulian"] = "裒敛：%dest 即将获得 %arg 张牌，是否改为由你获得？",
 }
 
+Fk:loadTranslationTable{
+  ["n_jz"] = "互联网六艺",
+}
+
 local caocao = General(extension, "n_jz__caocao", "wei", 4)
 local jianxiong = fk.CreateTriggerSkill{
   name = "n_jianxiong",
@@ -1136,8 +1140,6 @@ local panshi = fk.CreateTriggerSkill{
 }
 lvbu:addSkill(panshi)
 Fk:loadTranslationTable{
-  ["n_jz"] = "互联网六艺",
-
   ["n_jz__lvbu"] = "孝吕布",
   ["designer:n_jz__lvbu"] = "notify",
 
@@ -1459,6 +1461,97 @@ Fk:loadTranslationTable{
   ["#n_yingfa-active"] = "赢伐：请召唤张辽！",
   ["n_shiwan"] = "十万",
   [":n_shiwan"] = "锁定技，当你的牌被其他角色获得后，若你的体力上限为全场最高，你摸一张牌并减一点体力上限。",
+}
+
+local huatuo = General(extension, "n_jz__huatuo", "qun", 3)
+local mafei = fk.CreateActiveSkill{
+  name = "n_mafei",
+  anim_type = "support",
+  prompt = "#n_mafei-active",
+  card_num = 1,
+  card_filter = function (self, to_select, selected, player)
+    return #selected == 0 and Fk:getCardById(to_select).color == Card.Red and
+      Fk:currentRoom():getCardArea(to_select) == Player.Hand and
+      not Self:prohibitDiscard(Fk:getCardById(to_select))
+  end,
+  target_num = 1,
+  target_filter = function (self, to_select, selected, selected_cards, card, extra_data, player)
+    return #selected == 0 and Fk:currentRoom():getPlayerById(to_select):isWounded()
+      and player:canUseTo(Fk:cloneCard("peach"), Fk:currentRoom():getPlayerById(to_select))
+  end,
+  on_use = function (self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    room:throwCard(effect.cards, self.name, player)
+    if player.dead or not target:isWounded() then return end
+    room:useVirtualCard("peach", nil, player, target, self.name, true)
+  end
+}
+local mafei_trigger = fk.CreateTriggerSkill{
+  name = "#n_mafei_trigger",
+  main_skill = mafei,
+  mute = true,
+  events = {fk.CardUsing},
+  can_trigger = function (self, event, target, player, data)
+    return target == player and player:hasSkill(mafei) and data.card.trueName == "peach"
+      and player:usedSkillTimes(self.name, Player.HistoryRound) == 0
+      and table.find(TargetGroup:getRealTargets(data.tos), function(pid) return pid ~= player.id end)
+  end,
+  on_cost = function (self, event, target, player, data)
+    if player.room:askForSkillInvoke(player, self.name, data, "#n_mafei-invoke::"..TargetGroup:getRealTargets(data.tos)[1]) then
+      self.cost_data = { tos = data.tos }
+      return true
+    end
+  end,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    room:notifySkillInvoked(player, mafei.name, "special")
+    player:broadcastSkillInvoke(mafei.name)
+    for _, pid in ipairs(TargetGroup:getRealTargets(data.tos)) do
+      if pid ~= player.id then
+        local p = room:getPlayerById(pid)
+        local record = room:getTag("n_mafei_rest") or {}
+        table.insert(record, pid)
+        room:setTag("n_mafei_rest", record)
+        room:killPlayer({ who = p.id })
+      end
+    end
+    if player:isAlive() then
+      local cards = room:getCardsFromPileByRule(".|.|heart,diamond", 1)
+      if #cards > 0 then
+        room:obtainCard(player, cards[1], false, fk.ReasonJustMove, player.id, self.name)
+      end
+    end
+  end,
+
+  refresh_events = {fk.BeforeGameOverJudge},
+  can_refresh = function (self, event, target, player, data)
+    return table.contains(player.room:getTag("n_mafei_rest") or {}, target.id)
+  end,
+  on_refresh = function (self, event, target, player, data)
+    target._splayer:setDied(false)
+    local room = player.room
+    local record = room:getTag("n_mafei_rest") or {}
+    table.removeOne(record, target.id)
+    room:setTag("n_mafei_rest", record)
+    room:setPlayerRest(target, 1)
+  end
+}
+mafei:addRelatedSkill(mafei_trigger)
+huatuo:addSkill(mafei)
+huatuo:addSkill("jijiu")
+
+Fk:loadTranslationTable{
+  ["n_jz__huatuo"] = "麻华佗",
+  ["designer:n_jz__huatuo"] = "notify",
+  ["illustrator:n_jz__huatuo"] = "黑羽",
+  ["n_mafei"] = "麻沸",
+  [":n_mafei"] = "出牌阶段，你可以弃置一张红色手牌，视为对一名已受伤的角色使用【桃】；" ..
+    "每轮限一次，当你对其他角色使用【桃】时，你可以令其立即死亡（改为一轮休整），然后你从牌堆获得一张红色牌。",
+
+  ["#n_mafei-active"] = "麻沸：你可以弃置一张红色手牌，视为对一名已受伤的角色使用【桃】",
+  ["#n_mafei-invoke"] = "是否发动技能“麻沸”，令 %dest 立即死亡（改为一轮休整）",
+  ["#n_mafei_trigger"] = "麻沸",
 }
 
 -- 喵
