@@ -1495,7 +1495,7 @@ local mafei_trigger = fk.CreateTriggerSkill{
   can_trigger = function (self, event, target, player, data)
     return target == player and player:hasSkill(mafei) and data.card.trueName == "peach"
       -- and player:usedSkillTimes(self.name, Player.HistoryRound) == 0
-      and player:getMark("n_mafei-round") == 0
+      and player:getMark("n_mafei-turn") == 0
       and table.find(TargetGroup:getRealTargets(data.tos), function(pid) return pid ~= player.id end)
   end,
   on_cost = function (self, event, target, player, data)
@@ -1508,7 +1508,7 @@ local mafei_trigger = fk.CreateTriggerSkill{
     local room = player.room
     room:notifySkillInvoked(player, mafei.name, "special")
     player:broadcastSkillInvoke(mafei.name)
-    room:addPlayerMark(player, "n_mafei-round")
+    room:addPlayerMark(player, "n_mafei-turn")
     for _, pid in ipairs(TargetGroup:getRealTargets(data.tos)) do
       if pid ~= player.id then
         local p = room:getPlayerById(pid)
@@ -1541,7 +1541,57 @@ local mafei_trigger = fk.CreateTriggerSkill{
 }
 mafei:addRelatedSkill(mafei_trigger)
 huatuo:addSkill(mafei)
-huatuo:addSkill("jijiu")
+local jijiu = fk.CreateViewAsSkill{
+  name = "n_jijiu",
+  anim_type = "support",
+  pattern = "peach",
+  card_filter = function(self, to_select, selected)
+    if #selected == 1 then return false end
+    return Fk:getCardById(to_select).color == Card.Red
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 1 then
+      return nil
+    end
+    local c = Fk:cloneCard("peach")
+    c.skillName = self.name
+    c:addSubcard(cards[1])
+    return c
+  end,
+  enabled_at_play = Util.FalseFunc,
+  enabled_at_response = function(self, player, res)
+    return player.phase == Player.NotActive and not res
+  end,
+}
+local jijiu_trigger = fk.CreateTriggerSkill{
+  name = "#n_jijiu_trigger",
+  events = {fk.EnterDying},
+  mute = true,
+  main_skill = jijiu,
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(jijiu) and target ~= player and
+      not player:prohibitUse(Fk:cloneCard("peach")) and
+      not player:isProhibited(target, Fk:cloneCard("peach"))
+  end,
+  on_cost = function (self, event, target, player, data)
+    local room = player.room
+    local peach_use = room:askForUseCard(player, "peach", nil, "#n_jijiu-use::" .. target.id, true,
+      {analepticRecover = true, must_targets = { target.id }, fix_targets = { target.id }}
+    )
+    if not peach_use then return end
+    peach_use.tos = { {target.id} }
+    self.cost_data = peach_use
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    -- room:notifySkillInvoked(player, "peiniang", "support")
+    -- player:broadcastSkillInvoke("peiniang")
+    room:useCard(self.cost_data)
+  end,
+}
+jijiu:addRelatedSkill(jijiu_trigger)
+huatuo:addSkill(jijiu)
 
 Fk:loadTranslationTable{
   ["n_jz__huatuo"] = "麻华佗",
@@ -1549,11 +1599,14 @@ Fk:loadTranslationTable{
   ["illustrator:n_jz__huatuo"] = "黑羽",
   ["n_mafei"] = "麻沸",
   [":n_mafei"] = "出牌阶段，你可以弃置一张红色手牌，视为对一名已受伤的角色使用【桃】；" ..
-    "每轮限一次，当你对其他角色使用【桃】时，你可以令其立即死亡（改为一轮休整），然后你从牌堆获得一张红色牌。",
+    "每回合限一次，当你对其他角色使用【桃】时，你可以令其立即死亡（改为一轮休整），然后你从牌堆获得一张红色牌。",
 
   ["#n_mafei-active"] = "麻沸：你可以弃置一张红色手牌，视为对一名已受伤的角色使用【桃】",
   ["#n_mafei-invoke"] = "是否发动技能“麻沸”，令 %dest 立即死亡（改为一轮休整）",
   ["#n_mafei_trigger"] = "麻沸",
+  ["n_jijiu"] = "急救",
+  [":n_jijiu"] = "你的回合外，你可以将一张红色牌当【桃】使用；当其他角色进入濒死状态时，你可以先对其使用一张【桃】。",
+  ["#n_jijiu-use"] = "急救：你可以先对 %dest 使用一张【桃】",
 }
 
 -- 喵
