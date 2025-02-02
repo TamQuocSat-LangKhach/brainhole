@@ -1494,7 +1494,8 @@ local mafei_trigger = fk.CreateTriggerSkill{
   events = {fk.CardUsing},
   can_trigger = function (self, event, target, player, data)
     return target == player and player:hasSkill(mafei) and data.card.trueName == "peach"
-      and player:usedSkillTimes(self.name, Player.HistoryRound) == 0
+      -- and player:usedSkillTimes(self.name, Player.HistoryRound) == 0
+      and player:getMark("n_mafei-round") == 0
       and table.find(TargetGroup:getRealTargets(data.tos), function(pid) return pid ~= player.id end)
   end,
   on_cost = function (self, event, target, player, data)
@@ -1507,6 +1508,7 @@ local mafei_trigger = fk.CreateTriggerSkill{
     local room = player.room
     room:notifySkillInvoked(player, mafei.name, "special")
     player:broadcastSkillInvoke(mafei.name)
+    room:addPlayerMark(player, "n_mafei-round")
     for _, pid in ipairs(TargetGroup:getRealTargets(data.tos)) do
       if pid ~= player.id then
         local p = room:getPlayerById(pid)
