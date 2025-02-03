@@ -660,6 +660,70 @@ Fk:loadTranslationTable{
   ["#n_poulian"] = "裒敛：%dest 即将获得 %arg 张牌，是否改为由你获得？",
 }
 
+local zhonglimu = General:new(extension, "nd_story__zhonglimu", "wu", 3)
+local dutian = fk.CreateTriggerSkill{
+  name = "n_dutian",
+  frequency = Skill.Compulsory,
+  anim_type = "drawcard",
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and
+      data.card.number == player:getMark("@n_dutian")
+  end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(player:getMark("@n_dutian") + 1, self.name)
+  end,
+
+  refresh_events = {fk.AfterCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    return player:hasSkill(self)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    local cards = {}
+    for _, move in ipairs(data) do
+      if move.to and move.to == player.id and move.toArea == Player.Hand then
+        for _, info in ipairs(move.moveInfo) do
+          table.insertIfNeed(cards, info.cardId)
+        end
+      end
+    end
+    if #cards == 0 then return end
+    room:setPlayerMark(player, "@n_dutian", #cards)
+  end,
+}
+zhonglimu:addSkill(dutian)
+local fuyi = fk.CreateActiveSkill{
+  name = "n_fuyi",
+  anim_type = "drawcard",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name) == 0
+  end,
+  target_num = 0,
+  prompt = function(self)
+    return "#n_fuyi:::" .. (Self:getMark("@n_dutian") + 1)
+  end,
+  card_filter = Util.FalseFunc,
+  on_use = function(self, room, effect)
+    local from = room:getPlayerById(effect.from)
+    local x = from:getMark("@n_dutian")
+    from:drawCards(x + 1, self.name)
+    room:askForDiscard(from, x + 1, x + 1, true, self.name, false)
+  end
+}
+zhonglimu:addSkill(fuyi)
+Fk:loadTranslationTable{
+  ["nd_story__zhonglimu"] = "钟离牧",
+  ["designer:nd_story__zhonglimu"] = "notify",
+
+  ["n_dutian"] = "度田",
+  [":n_dutian"] = "锁定技，你获得牌后，记录获得的数量。当你使用点数为X的牌后，你摸X+1张牌（X为记录的数量）。",
+  ["@n_dutian"] = "度田",
+  ["n_fuyi"] = "抚夷",
+  [":n_fuyi"] = "出牌阶段限一次，你可以摸X+1张牌，弃置等量的牌。（X为“度田”记录的数量）",
+  ["#n_fuyi"] = "抚夷：你可以摸 %arg 张牌，再弃置 %arg 张牌",
+}
+
 Fk:loadTranslationTable{
   ["n_jz"] = "互联网六艺",
 }
