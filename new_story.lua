@@ -671,7 +671,10 @@ local dutian = fk.CreateTriggerSkill{
       data.card.number == player:getMark("@n_dutian")
   end,
   on_use = function(self, event, target, player, data)
-    player:drawCards(player:getMark("@n_dutian") + 1, self.name)
+    local room = player.room
+    local x = player:getMark("@n_dutian")
+    player:drawCards(2, self.name)
+    room:setPlayerMark(player, "@n_dutian", x + 1)
   end,
 
   refresh_events = {fk.AfterCardsMove},
@@ -717,12 +720,143 @@ Fk:loadTranslationTable{
   ["designer:nd_story__zhonglimu"] = "notify",
 
   ["n_dutian"] = "度田",
-  [":n_dutian"] = "锁定技，你获得牌后，记录获得的数量。当你使用点数为X的牌后，你摸X+1张牌（X为记录的数量）。",
+  [":n_dutian"] = "锁定技，你获得牌后，记录获得的数量。当你使用点数为X的牌后，你摸两张牌并将记录数设为X+1（X为记录的数量）。",
   ["@n_dutian"] = "度田",
   ["n_fuyi"] = "抚夷",
   [":n_fuyi"] = "出牌阶段限一次，你可以摸X+1张牌，弃置等量的牌。（X为“度田”记录的数量）",
   ["#n_fuyi"] = "抚夷：你可以摸 %arg 张牌，再弃置 %arg 张牌",
 }
+
+local huangjinfashi = General:new(extension, "nd_story__huangjinfashi", "qun", 3, 3, false)
+local leiji = fk.CreateTriggerSkill{
+  name = 'n_leiji',
+  events = {fk.FinishJudge, fk.Damaged, fk.TargetSpecified},
+  frequency = Skill.Compulsory,
+  anim_type = "offensive",
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self) then return end
+    local room = player.room
+    if event == fk.Damaged then
+      return target == player and data.from ~= nil
+    elseif event == fk.TargetSpecified then
+      return target == player and data.card.color == Card.Black
+    elseif event == fk.FinishJudge then
+      if target.dead then return end
+      return data.card.suit ~= Card.Heart or room:getCardOwner(data.card) == nil
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.FinishJudge then
+      if data.card.suit == Card.Spade then
+        local pattern = ".|2~9|spade"
+        local judge = {
+          who = target,
+          reason = "lightning",
+          pattern = pattern,
+        }
+        room:judge(judge)
+        if judge.card:matchPattern(pattern) then
+          room:damage{
+            to = target,
+            damage = 3,
+            damageType = fk.ThunderDamage,
+            skillName = self.name,
+          }
+        end
+      elseif data.card.suit == Card.Heart then
+        room:obtainCard(player, data.card, true, fk.ReasonJustMove, nil, self.name)
+      elseif data.card.suit == Card.Club then
+        room:damage{
+          to = target,
+          damage = 1,
+          damageType = fk.ThunderDamage,
+          skillName = self.name,
+        }
+      elseif data.card.suit == Card.Diamond then
+        target:drawCards(1, self.name)
+      end
+    elseif event == fk.Damaged then
+      room:judge {
+        who = data.from,
+        reason = self.name,
+        pattern = ".",
+      }
+    elseif event == fk.TargetSpecified then
+      room:judge {
+        who = room:getPlayerById(data.to),
+        reason = self.name,
+        pattern = ".",
+      }
+    end
+  end,
+}
+huangjinfashi:addSkill(leiji)
+local hunfu = fk.CreateTriggerSkill{
+  name = "n_hunfu",
+  frequency = Skill.Compulsory,
+  anim_type = "offensive",
+  events = {fk.Death},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self, false, true) then
+      local availableTargets = {}
+      local n = 0
+      for _, p in ipairs(player.room.alive_players) do
+        if p:getMark("@n_hunfu") > n then
+          availableTargets = {}
+          table.insert(availableTargets, p.id)
+          n = p:getMark("@n_hunfu")
+        elseif p:getMark("@n_hunfu") == n then
+          table.insert(availableTargets, p.id)
+        end
+      end
+      if #availableTargets > 0 then
+        self.cost_data = availableTargets
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    for _, p in ipairs(room.alive_players) do
+      room:setPlayerMark(p, "@n_hunfu", 0)
+    end
+    for _, pid in ipairs(self.cost_data) do
+      local p = room:getPlayerById(pid)
+      room:addPlayerMark(p, "n_hunfucontrolled")
+      player:control(p)
+    end
+  end,
+
+  refresh_events = {fk.TurnEnd, fk.FinishJudge},
+  can_refresh = function(self, event, target, player)
+    if event == fk.TurnEnd then
+      return target == player and target:getMark("n_hunfucontrolled") > 0
+    else
+      return player:hasSkill(self)
+    end
+  end,
+  on_refresh = function(_, event, target)
+    local room = target.room
+    if event == fk.TurnEnd then
+      room:setPlayerMark(target, "n_hunfucontrolled", 0)
+      target:control(target)
+    else
+      room:addPlayerMark(target, "@n_hunfu")
+    end
+  end,
+}
+huangjinfashi:addSkill(hunfu)
+
+Fk:loadTranslationTable{
+  ["nd_story__huangjinfashi"] = "黄巾法师",
+  ["n_leiji"] = "雷祭",
+  [":n_leiji"] = "锁定技，当一名角色的判定结果确定后：<br>黑桃，其进行一次【闪电】的判定；<br>红桃，你获得判定牌；<br>梅花：其受到一点雷属性伤害；方片：其摸一张牌。<br>你受到伤害后，令伤害来源判定；你使用黑色牌指定目标后，令所有目标进行判定。",
+  ["n_hunfu"] = "魂附",
+  [":n_hunfu"] = "锁定技，一名角色完成判定后，其获得一枚“判”。你死亡时，操控“判”标记最多的角色直到其下回合结束。",
+  ["@n_hunfu"] = "判",
+}
+
 
 Fk:loadTranslationTable{
   ["n_jz"] = "互联网六艺",
