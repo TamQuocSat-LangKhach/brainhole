@@ -727,12 +727,13 @@ Fk:loadTranslationTable{
   ["#n_fuyi"] = "抚夷：你可以摸 %arg 张牌，再弃置 %arg 张牌",
 }
 
-local huangjinfashi = General:new(extension, "nd_story__huangjinfashi", "qun", 3, 3, false)
+local huangjinfashi = General:new(extension, "nd_story__huangjinfashi", "qun", 3, 3, General.Female)
 local leiji = fk.CreateTriggerSkill{
   name = 'n_leiji',
   events = {fk.FinishJudge, fk.Damaged, fk.TargetSpecified},
   frequency = Skill.Compulsory,
-  anim_type = "offensive",
+  -- anim_type = "offensive",
+  mute = true,
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self) then return end
     local room = player.room
@@ -749,6 +750,8 @@ local leiji = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.FinishJudge then
       if data.card.suit == Card.Spade then
+        player:broadcastSkillInvoke(self.name, 3)
+        room:notifySkillInvoked(player, self.name, "offensive")
         local pattern = ".|2~9|spade"
         local judge = {
           who = target,
@@ -765,8 +768,12 @@ local leiji = fk.CreateTriggerSkill{
           }
         end
       elseif data.card.suit == Card.Heart then
+        player:broadcastSkillInvoke(self.name, 4)
+        room:notifySkillInvoked(player, self.name, "drawcard")
         room:obtainCard(player, data.card, true, fk.ReasonJustMove, nil, self.name)
       elseif data.card.suit == Card.Club then
+        player:broadcastSkillInvoke(self.name, 5)
+        room:notifySkillInvoked(player, self.name, "offensive")
         room:damage{
           to = target,
           damage = 1,
@@ -774,15 +781,21 @@ local leiji = fk.CreateTriggerSkill{
           skillName = self.name,
         }
       elseif data.card.suit == Card.Diamond then
+        player:broadcastSkillInvoke(self.name, 6)
+        room:notifySkillInvoked(player, self.name, "support")
         target:drawCards(1, self.name)
       end
     elseif event == fk.Damaged then
+      player:broadcastSkillInvoke(self.name, math.random(1, 2))
+      room:notifySkillInvoked(player, self.name, "offensive")
       room:judge {
         who = data.from,
         reason = self.name,
         pattern = ".",
       }
     elseif event == fk.TargetSpecified then
+      player:broadcastSkillInvoke(self.name, math.random(1, 2))
+      room:notifySkillInvoked(player, self.name, "offensive")
       room:judge {
         who = room:getPlayerById(data.to),
         reason = self.name,
@@ -821,6 +834,7 @@ local hunfu = fk.CreateTriggerSkill{
     for _, p in ipairs(room.alive_players) do
       room:setPlayerMark(p, "@n_hunfu", 0)
     end
+    room:doIndicate(player.id, self.cost_data)
     for _, pid in ipairs(self.cost_data) do
       local p = room:getPlayerById(pid)
       room:addPlayerMark(p, "n_hunfucontrolled")
@@ -851,10 +865,22 @@ huangjinfashi:addSkill(hunfu)
 Fk:loadTranslationTable{
   ["nd_story__huangjinfashi"] = "黄巾法师",
   ["n_leiji"] = "雷祭",
-  [":n_leiji"] = "锁定技，当一名角色的判定结果确定后：<br>黑桃，其进行一次【闪电】的判定；<br>红桃，你获得判定牌；<br>梅花：其受到一点雷属性伤害；方片：其摸一张牌。<br>你受到伤害后，令伤害来源判定；你使用黑色牌指定目标后，令所有目标进行判定。",
+  [":n_leiji"] = "锁定技，当一名角色的判定结果确定后：<br>黑桃，其进行一次【闪电】的判定；<br>红桃，你获得判定牌；<br>梅花：其受到一点雷属性伤害；<br>方片：其摸一张牌。<br>你受到伤害后，令伤害来源判定；你使用黑色牌指定目标后，令所有目标进行判定。",
   ["n_hunfu"] = "魂附",
   [":n_hunfu"] = "锁定技，一名角色完成判定后，其获得一枚“判”。你死亡时，操控“判”标记最多的角色直到其下回合结束。",
   ["@n_hunfu"] = "判",
+
+  ["designer:nd_story__huangjinfashi"] = "notify",
+  ["cv:nd_story__huangjinfashi"] = "北月畫仙",
+  ["$n_leiji1"] = "天非苍苍之天，岂照昏昏之路？",
+  ["$n_leiji2"] = "承景灵之冥符，拟血积而荡秽。",
+  ["$n_leiji3"] = "天雷无妄，天诛难免！",
+  ["$n_leiji4"] = "阐道法、施符水，天地秀气当为人用。",
+  ["$n_leiji5"] = "金蛇乱掣，电母生嗔！",
+  ["$n_leiji6"] = "饥则食、冷则衣，小儿之理大人不知！",
+  ["$n_hunfu1"] = "七千里记黄天途，家山何处？",
+  ["$n_hunfu2"] = "填海水以将枯，心早成灰。",
+  ["~nd_story__huangjinfashi"] = "飞尘塞眼，苍生泪、犹似平时。",
 }
 
 
