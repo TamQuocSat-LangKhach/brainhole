@@ -880,7 +880,7 @@ Fk:loadTranslationTable{
   ["$n_leiji6"] = "饥则食、冷则衣，小儿之理大人不知！",
   ["$n_hunfu1"] = "七千里记黄天途，家山何处？",
   ["$n_hunfu2"] = "填海水以将枯，心早成灰。",
-  ["~nd_story__huangjinfashi"] = "飞尘塞眼，苍生泪、犹似平时。",
+  ["~nd_story__huangjinfashi"] = "飞尘塞眼，苍生泪、犹似平时……",
 }
 
 
