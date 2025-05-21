@@ -1,7 +1,9 @@
-local extension = require 'packages.brainhole.pkg.brainhole'
---local extension2 = require 'packages.brainhole.pkg.new_story'
+local brainhole = require 'packages.brainhole.pkg.brainhole'
+local new_story = require 'packages.brainhole.pkg.new_story'
+local brainhole_cards = require 'packages.brainhole.pkg.brainhole_cards'
 
 return {
-  extension,
-  --extension2,
+  brainhole,
+  new_story,
+  brainhole_cards,
 }

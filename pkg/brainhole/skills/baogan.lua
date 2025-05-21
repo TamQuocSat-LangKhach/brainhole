@@ -1,5 +1,6 @@
 local baogan = fk.CreateSkill{
   name = "n_baogan",
+  tags={Skill.Limited,},
 }
 
 Fk:loadTranslationTable{

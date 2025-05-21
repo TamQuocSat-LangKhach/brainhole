@@ -90,10 +90,14 @@ local function changeEnergy(p, n)
   p.room:setPlayerMark(p, "@melee_energy", e)
 end
 
-local melee_rule = fk.CreateTriggerSkill{
+
+local melee_rule = fk.CreateSkill{
+  name="#melee_rule",
+}
+
+melee_rule:addEffect(fk.EventPhaseStart,{
   name = "#melee_rule",
   priority = 0.001,
-  events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     return target == player and player.phase == Player.Play
   end,
@@ -144,13 +148,13 @@ local melee_rule = fk.CreateTriggerSkill{
     end
     return true
   end
-}
-Fk:addSkill(melee_rule)
+})
+
 local melee_mode = fk.CreateGameMode{
   name = "melee_mode",
   minPlayer = 2,
   maxPlayer = 8,
-  rule = melee_rule,
+  rule = "#melee_rule",
   logic = melee_getLogic,
   surrender_func = function(self, playedTime)
     local surrenderJudge = { { text = "chaos: left two alive", passed = #table.filter(Fk:currentRoom().players, function(p) return p.rest > 0 or not p.dead end) == 2 } }
@@ -182,5 +186,7 @@ Fk:loadTranslationTable{
   [":melee_mode"] = description,
   ["@melee_energy"] = "气力值",
 }
+
+
 
 return melee_mode

@@ -20,13 +20,13 @@ yinghui:addEffect(fk.BeforeDrawCard, {
       ".", "#n_yinghui-ask::" .. data.who.id .. ":" .. data.num, true)
 
     if #ids > 0 then
-      self.cost_data = ids[1]
+      event:setCostData(self, ids[1])
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:throwCard(self.cost_data, self.name, player, player)
+    room:throwCard(event:getCostData(self), self.name, player, player)
     local num = data.num
     data.num = 2
     local x = math.abs(num - data.num) - 1

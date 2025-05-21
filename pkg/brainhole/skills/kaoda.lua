@@ -44,7 +44,8 @@ kaoda:addEffect(fk.EnterDying, {
   on_refresh = refresh_fn,
 })
 
-kaoda:addEffect(fk.AfterTurnEnd, {
+kaoda:addEffect(fk.TurnEnd, {
+  late_refresh=true,
   can_refresh = function(self, event, target, player, data)
     return target == player
   end,
