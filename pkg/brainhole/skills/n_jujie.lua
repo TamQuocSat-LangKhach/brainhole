@@ -2,85 +2,75 @@ local n_jujie = fk.CreateSkill {
   name = "n_jujie",
 }
 
+Fk:loadTranslationTable{
+  ["n_jujie"] = "拒杰",
+  [":n_jujie"] = "当你成为其他角色使用伤害类卡牌的目标后，你可以弃置一张牌，若此牌对你造成了伤害，其须将手牌数弃至与你一致。",
 
+  ["#n_jujie-ask"] = "拒杰：你可以弃置一张牌，若受到%arg的伤害则 %dest 须将手牌弃置至与你相等",
+
+  ["$n_jujie"] = "不要啦杰哥！你干嘛！",
+}
 
 n_jujie:addEffect(fk.TargetConfirmed, {
-  name = "n_jujie",
   anim_type = "defensive",
   can_trigger = function(self, event, target, player, data)
-    if not (target == player and player:hasSkill(n_jujie.name)) then return end
-    if event == fk.TargetConfirmed then
-      return data.from ~= player and data.card.is_damage_card
-    else
-      local e = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
-      return (e and e.n_jujie_list or {})[player.id] ~= nil and data.from and
-          data.from:getHandcardNum() > player:getHandcardNum()
-    end
+    return target == player and player:hasSkill(n_jujie.name) and
+      data.from ~= player and data.card.is_damage_card and
+      not player:isNude()
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.TargetConfirmed then
-      local ids = room:askForDiscard(player, 1, 1, true, n_jujie.name, true,
-        ".", "#n_jujie_ask::" .. data.from.id .. ":" .. data.card.name, true)
-      if #ids > 0 then
-        event:setCostData(self, { cards = ids })
-        return true
-      end
-    else
+    local card = room:askToDiscard(player, {
+      min_num = 1,
+      max_num = 1,
+      include_equip = true,
+      skill_name = n_jujie.name,
+      prompt = "#n_jujie-ask::" .. data.from.id .. ":" .. data.card.name,
+      cancelable = true,
+      skip = true,
+    })
+    if #card > 0 then
+      event:setCostData(self, {cards = card})
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.TargetConfirmed then
-      room:throwCard(event:getCostData(self).cards, n_jujie.name, player, player)
-      local e = room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
-      e.n_jujie_list = e.n_jujie_list or {}
-      e.n_jujie_list[player.id] = true
-    else
-      local from = data.from
-      local a, b = player:getHandcardNum(), from:getHandcardNum()
-      if a < b then
-        room:askForDiscard(from, b - a, b - a, false, n_jujie.name, false)
-      end
-    end
+    data.extra_data = data.extra_data or {}
+    data.extra_data.n_jujie = {player.id, target.id}
+    room:throwCard(event:getCostData(self).cards, n_jujie.name, player, player)
   end,
 })
+
 n_jujie:addEffect(fk.Damaged, {
-  name = "n_jujie",
-  anim_type = "defensive",
+  mute = true,
+  is_delay_effect = true,
   can_trigger = function(self, event, target, player, data)
-    if not (target == player and player:hasSkill(n_jujie.name)) then return end
-    if event == fk.TargetConfirmed then
-      return data.from ~= player.id and data.card.is_damage_card
-    else
-      local e = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
-      return (e and e.n_jujie_list or {})[player.id] ~= nil and data.from and
-          data.from:getHandcardNum() > player:getHandcardNum()
-    end
-  end,
-  on_cost = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.TargetConfirmed then
-      local ids = room:askForDiscard(player, 1, 1, true, n_jujie.name, true,
-        ".", "#n_jujie_ask::" .. data.from.id .. ":" .. data.card.name, true)
-      if #ids > 0 then
-        event:setCostData(self, { cards = ids })
-        return true
+    if target == player and data.card then
+      local use_event = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+      if use_event then
+        local use = use_event.data
+        if use.extra_data and use.extra_data.n_jujie and use.extra_data.n_jujie[1] == player.id then
+          local from = player.room:getPlayerById(use.extra_data.n_jujie[2])
+          if from and from:getHandcardNum() > player:getHandcardNum() then
+            event:setCostData(self, {tos = {from}})
+            return true
+          end
+        end
       end
-    else
-      return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local from = data.from
-    if from then
-      local a, b = player:getHandcardNum(), from:getHandcardNum()
-      if a < b then
-        room:askForDiscard(from, b - a, b - a, false, n_jujie.name, false)
-      end
-    end
+    local from = event:getCostData(self).tos[1]
+    local n = from:getHandcardNum() - player:getHandcardNum()
+    room:askToDiscard(from, {
+      min_num = n,
+      max_num = n,
+      include_equip = false,
+      skill_name = n_jujie.name,
+      cancelable = false,
+    })
   end,
 })
 

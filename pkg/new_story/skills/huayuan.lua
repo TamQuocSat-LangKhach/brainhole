@@ -1,12 +1,14 @@
 local huayuan = fk.CreateSkill {
-
   name = "n_huayuan",
-
-  tags = {  },
-
 }
 
+Fk:loadTranslationTable{
+  ["n_huayuan"] = "化缘",
+  [":n_huayuan"] = "摸牌阶段开始时，你可以获得上家的两张牌，然后交给其两张牌（均明置，不足则不给），若这四张牌的花色：各不相同，你摸两张牌；"..
+  "都相同，你回复一点体力。",
 
+  ["#n_huayuan-give"] = "化缘：请交给上家两张牌，根据四张牌的花色情况执行效果",
+}
 
 huayuan:addEffect(fk.EventPhaseStart, {
   anim_type = "support",

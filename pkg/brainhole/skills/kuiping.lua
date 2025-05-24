@@ -10,7 +10,7 @@ Fk:loadTranslationTable {
 
 kuiping:addEffect('visibility', {
   card_visible = function(self, player, card)
-    if player:hasSkill(self) then
+    if player:hasSkill(kuiping.name) then
       local owner = Fk:currentRoom():getCardOwner(card.id)
       if owner and owner.seat == 1 then
         return true

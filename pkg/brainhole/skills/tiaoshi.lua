@@ -12,21 +12,20 @@ tiaoshi:addEffect('active', {
   anim_type = "drawcard",
   target_num = 0,
   prompt = function(self, player)
-    return "#n_tiaoshi:::" .. player:usedSkillTimes(self.name)
+    return "#n_tiaoshi:::" .. player:usedSkillTimes(tiaoshi.name)
   end,
   card_num = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase)
+    return player:usedSkillTimes(tiaoshi.name, Player.HistoryPhase)
   end,
   card_filter = function(self, player, to_select, selected)
-    return #selected < player:usedSkillTimes(self.name) and
-      not player:prohibitDiscard(Fk:getCardById(to_select))
+    return #selected < player:usedSkillTimes(tiaoshi.name) and not player:prohibitDiscard(to_select)
   end,
   on_use = function(self, room, effect)
     local from = effect.from
     if #effect.cards > 0 then
-      room:throwCard(effect.cards, self.name, from)
+      room:throwCard(effect.cards, tiaoshi.name, from)
     end
-    from:drawCards(1, self.name)
+    from:drawCards(1, tiaoshi.name)
   end
 })
 

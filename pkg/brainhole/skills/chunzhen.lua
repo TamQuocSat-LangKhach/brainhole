@@ -3,31 +3,39 @@ local chunzhen = fk.CreateSkill {
   tags = { Skill.Compulsory, },
 }
 
+Fk:loadTranslationTable{
+  ["n_chunzhen"] = "纯真",
+  [":n_chunzhen"] = "锁定技，当你使用普通锦囊牌指定多个目标时，你须为此牌减少一个目标，然后你获得1枚“纯真”标记；当你受到雷属性伤害时，"..
+  "你弃置1枚“纯真”标记，令此伤害值-1。",
 
+  ["#n_chunzhen-choose"] = "纯真: 必须为此牌减少一个目标",
+  ["@n_chunzhen"] = "纯真",
+}
 
 chunzhen:addEffect(fk.AfterCardTargetDeclared, {
-  name = "n_chunzhen",
-  mute = true,
   can_trigger = function(self, event, target, player, data)
     if not (target == player and player:hasSkill(chunzhen.name)) then
       return false
     end
-    return data.card:getSubtypeString() == "normal_trick" and data.tos and #data.tos > 1
+    return data.card:isCommonTrick() and #data.tos > 1
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    player:broadcastSkillInvoke(chunzhen.name)
-    room:notifySkillInvoked(player, chunzhen.name, "special")
-    local tos = room:askForChoosePlayers(player, table.map(data.tos,Util.IdMapper), 1, 1,
-      "#n_chunzhen-choose", chunzhen.name, false)
-    
-    data:removeTarget(room:getPlayerById(tos[1]))
+    local to = room:askToChoosePlayers(player, {
+      min_num = 1,
+      max_num = 1,
+      targets = data.tos,
+      skill_name = chunzhen.name,
+      prompt = "#n_chunzhen-choose",
+      cancelable = false,
+    })[1]
+    data:removeTarget(to)
     room:addPlayerMark(player, "@n_chunzhen", 1)
   end,
 })
+
 chunzhen:addEffect(fk.DamageInflicted, {
-  name = "n_chunzhen",
-  mute = true,
+  anim_type = "defensive",
   can_trigger = function(self, event, target, player, data)
     if not (target == player and player:hasSkill(chunzhen.name)) then
       return false
@@ -36,10 +44,8 @@ chunzhen:addEffect(fk.DamageInflicted, {
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    player:broadcastSkillInvoke(chunzhen.name)
-    room:notifySkillInvoked(player, chunzhen.name, "defensive")
     room:removePlayerMark(player, "@n_chunzhen", 1)
-    data.damage = data.damage - 1
+    data:changeDamage(-1)
   end,
 })
 

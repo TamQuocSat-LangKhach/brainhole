@@ -2,56 +2,57 @@ local n_fudu = fk.CreateSkill {
   name = "n_fudu",
 }
 
+Fk:loadTranslationTable{
+  ["n_fudu"] = "复读",
+  [":n_fudu"] = "其他角色的指定唯一目标的非转化的基本牌或者普通锦囊牌结算完成后：<br/>"..
+  "若你是唯一目标，你可以将颜色相同的一张手牌当做此牌对使用者使用。<br/>"..
+  "若你不是唯一目标，你可以将颜色相同的一张手牌当做此牌对目标角色使用。",
 
+  ["@n_fudu"] = "复读：你可以将一张%arg2手牌当【%arg】对 %dest 使用",
+
+  ["$n_fudu"] = "加一",
+}
 
 n_fudu:addEffect(fk.CardUseFinished, {
-  name = "n_fudu",
   anim_type = "offensive",
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(n_fudu.name) then return end
-    if player:isKongcheng() then return end
-    local use = data 
-    local card = use.card
-    if not (use.from ~= player and use.tos and (not card:isVirtual()) and (card.type == Card.TypeBasic or card:isCommonTrick())) then
-      return
+    if player:hasSkill(n_fudu.name) and
+      #data.tos == 1 and not data.card:isVirtual() and
+      (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) and data.card.color ~= Card.NoColor and
+      #player:getHandlyIds() > 0 then
+      local to = data:isOnlyTarget(player) and target or data.tos[1]
+      return to and not to.dead and player:canUseTo(Fk:cloneCard(data.card.name), to, { bypass_times = true, bypass_distances = true })
     end
-    local tos = data.tos
-    if #table.filter(player.room.alive_players, function(p) return table.contains(tos, p) end) ~= 1 then return end
-    local room = player.room
-    local target = use.tos[1] == player and use.from or use.tos[1]
-    if target.dead then
-      return
-    end
-    return player:canUseTo(card, target, { bypass_times = true, bypass_distances = true })
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local use = data 
-    local target = use.tos[1] == player and use.from or use.tos[1]
-    local ids = table.filter(player:getCardIds(Player.Hand), function(id)
-      return use.card:compareColorWith(Fk:getCardById(id))
-    end)
-    local c = room:askForCard(player, 1, 1, false, n_fudu.name, true,
-      tostring(Exppattern{ id = ids }),
-      "@n_fudu::" .. target.id .. ":" .. use.card.name .. ":" .. use.card:getColorString())[1]
-    if c then
-      event:setCostData(self, c)
+    local to = data:isOnlyTarget(player) and target or data.tos[1]
+    local pattern = data.card.color == Card.Red and "heart,diamond" or "spade,club"
+    local use = room:askToUseVirtualCard(target, {
+      name = data.card.name,
+      skill_name = n_fudu.name,
+      prompt = "@n_fudu::" .. target.id .. ":" .. data.card.name .. ":" .. data.card:getColorString(),
+      cancelable = true,
+      extra_data = {
+        bypass_distances = true,
+        bypass_times = true,
+        extraUse = true,
+        exclusive_targets = { to.id },
+      },
+      card_filter = {
+        n = 1,
+        pattern = pattern,
+        cards = player:getHandlyIds(),
+      },
+      skip = true,
+    })
+    if use then
+      event:setCostData(self, {extra_data = use})
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
-    local room = player.room
-    local use = {}
-    use.from = player
-    use.tos = data.tos[1] == player
-      and { data.from }
-      or table.simpleClone(data.tos)
-    local card = Fk:cloneCard(data.card.name)
-    card:addSubcard(event:getCostData(self))
-    card.skillName = n_fudu.name
-    use.card = card
-    use.extraUse = true
-    room:useCard(use)
+    player.room:useCard(event:getCostData(self).extra_data)
   end,
 })
 

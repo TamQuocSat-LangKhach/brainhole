@@ -3,10 +3,12 @@ local n_leimu = fk.CreateSkill {
   tags = { Skill.Compulsory, },
 }
 
-
+Fk:loadTranslationTable{
+  ["n_leimu"] = "泪目",
+  [":n_leimu"] = "锁定技，准备阶段，若你的体力值为全场最少，且你的体力上限小于7，你增加1点体力上限并回复1点体力。",
+}
 
 n_leimu:addEffect(fk.EventPhaseStart, {
-  name = "n_leimu",
   anim_type = "defensive",
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(n_leimu.name) and target == player and player.phase == Player.Start and player.maxHp < 7 then

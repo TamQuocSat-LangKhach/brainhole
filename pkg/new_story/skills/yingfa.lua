@@ -1,15 +1,17 @@
 local yingfa = fk.CreateSkill {
-
   name = "n_yingfa",
-
-  tags = {  },
-
 }
 
+Fk:loadTranslationTable{
+  ["n_yingfa"] = "赢伐",
+  [":n_yingfa"] = "结束阶段，若张辽在场且存活，你升级“制衡”；出牌阶段限X次，你可以将一名不是张辽的其他角色的副将替换为随机张辽"..
+  "直到你受到伤害或死亡。（X为你升级过“制衡”的次数+1）<br><font color=>※随机张辽：就是各种版本的张辽，包括神张辽，但不包括国战张辽。<br>"..
+  "※升级“制衡”：若没有制衡则获得标准版制衡，否则替换成增强版制衡（标->界->经典->会玩）；若已拥有“会玩”则升级失败，摸一张牌。</font>",
 
+  ["#n_yingfa-active"] = "赢伐：请召唤张辽！",
+}
 
 yingfa:addEffect("active", {
-  name = "n_yingfa",
   anim_type = "control",
   prompt = "#n_yingfa-active",
   max_card_num = 0,
@@ -44,9 +46,6 @@ yingfa:addEffect("active", {
 })
 
 yingfa:addEffect(fk.EventPhaseStart, {
-  name = "#n_yingfa_trig",
-  events = {fk.EventPhaseStart},
-  --yingfa,
   can_trigger = function (self, event, target, player, data)
     if target == player and player:hasSkill("n_yingfa") and player.phase == Player.Finish then
       return table.find(player.room.alive_players, function (p)
@@ -76,8 +75,6 @@ yingfa:addEffect(fk.EventPhaseStart, {
 })
 
 yingfa:addEffect(fk.Death, {
-  name = "#n_yingfa_delay",
-  mute = true,
   can_trigger = function (self, event, target, player, data)
     if target == player then
       return #player:getTableMark("n_yingfa_target") > 0
@@ -95,14 +92,13 @@ yingfa:addEffect(fk.Death, {
   end,
 })
 yingfa:addEffect(fk.Damaged, {
-  name = "#n_yingfa_delay",
   mute = true,
+  is_delay_effect = true,
   can_trigger = function (self, event, target, player, data)
     if target == player then
       return #player:getTableMark("n_yingfa_target") > 0
     end
   end,
-  on_cost = Util.TrueFunc,
   on_use = function (self, event, target, player, data)
     local room = player.room
     local mark = player:getTableMark("n_yingfa_target")

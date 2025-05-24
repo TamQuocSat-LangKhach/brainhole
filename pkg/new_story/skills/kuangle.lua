@@ -1,12 +1,19 @@
 local kuangle = fk.CreateSkill {
-
   name = "n_kuangle",
-
-  tags = { Skill.Compulsory, },
-
+  tags = { Skill.Compulsory },
 }
 
+Fk:loadTranslationTable{
+  ["n_kuangle"] = "狂乐",
+  [":n_kuangle"] = "锁定技，当你使用牌结算完成后，若其花色未被记录，则你摸一张牌并记录此花色，否则你选择一项："..
+  "1.摸一张牌，本回合使用此颜色牌不能再选择此项；2.你使用的下一张牌不可被响应。",
 
+  ["@[suits]n_kuangle"] = "狂乐",
+  ["@@n_kuangle"] = "下一张强中",
+  ["n_kuangle-draw"] = "摸一张牌，本回合使用此颜色牌不能再选择此项",
+  ["n_kuangle-recover"] = "回复1点体力",
+  ["n_kuangle-disresponsive"] = "你使用的下一张牌不可被响应",
+}
 
 kuangle:addEffect(fk.CardUseFinished, {
   anim_type = "drawcard",

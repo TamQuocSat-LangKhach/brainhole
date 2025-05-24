@@ -75,7 +75,7 @@ local melee_getLogic = function()
     generals = table.filter(generals, function(g) return not table.contains(selected, g) end)
     room:returnToGeneralPile(generals)
 
-    room:askForChooseKingdom(players)
+    room:askToChooseKingdom(players)
   end
 
   return melee_logic

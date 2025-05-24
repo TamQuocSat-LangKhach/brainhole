@@ -3,6 +3,12 @@ local kuli = fk.CreateSkill {
   tags = { Skill.Compulsory, },
 }
 
+Fk:loadTranslationTable{
+  ["n_kuli"] = "苦力",
+  [":n_kuli"] = "锁定技，当牌进入你的装备区后，你每缺少某种类别的空置装备栏，便获得一个额外的对应类别的装备栏并摸两张牌。<br>"..
+  "<font color=>注：UI未适配多装备栏，需要等待游戏软件版本更新，请勿反馈显示问题。</font>",
+}
+
 local equip_subtypes = {
   Card.SubtypeWeapon,
   Card.SubtypeArmor,
@@ -12,7 +18,6 @@ local equip_subtypes = {
 }
 
 kuli:addEffect(fk.AfterCardsMove, {
-  name = "n_kuli",
   anim_type = "support",
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(kuli.name) then return end

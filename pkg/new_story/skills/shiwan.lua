@@ -1,15 +1,14 @@
 local shiwan = fk.CreateSkill {
-
   name = "n_shiwan",
-
-  tags = { Skill.Compulsory, },
-
+  tags = { Skill.Compulsory },
 }
 
-
+Fk:loadTranslationTable{
+  ["n_shiwan"] = "十万",
+  [":n_shiwan"] = "锁定技，当你的牌被其他角色获得后，若你的体力上限为全场最高，你摸一张牌并减1点体力上限。",
+}
 
 shiwan:addEffect(fk.AfterCardsMove, {
-  name = "n_shiwan",
   anim_type = "drawcard",
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(shiwan.name) then return false end

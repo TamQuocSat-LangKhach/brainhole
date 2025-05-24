@@ -2,26 +2,40 @@ local n_didiao = fk.CreateSkill {
   name = "n_didiao",
 }
 
+Fk:loadTranslationTable{
+  ["n_didiao"] = "低调",
+  [":n_didiao"] = "每当你使用锦囊牌后，你可以弃置一张牌，获得一枚“饺”标记。",
 
+  ["#n_didiao-discard"] = "低调：你可以弃置一张牌，获得一枚“饺”",
+  ["@n_jiao"] = "饺",
+}
 
 n_didiao:addEffect(fk.CardUsing, {
-  name = "n_didiao",
   anim_type = "drawcard",
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(n_didiao.name) and data.card.type == Card.TypeTrick and
       not player:isNude()
   end,
   on_cost = function(self, event, target, player, data)
-    local c = player.room:askForDiscard(player, 1, 1, true, n_didiao.name, true, ".", "#n_didiao-discard", true)
-    if c[1] then
-      event:setCostData(self, c[1])
+    local room = player.room
+    local card = room:askToDiscard(player, {
+      min_num = 1,
+      max_num = 1,
+      include_equip = true,
+      skill_name = n_didiao.name,
+      prompt = "#n_didiao-discard",
+      cancelable = true,
+      skip = true,
+    })
+    if #card > 0 then
+      event:setCostData(self, {cards = card})
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:throwCard(event:getCostData(self), n_didiao.name, player, player)
     room:addPlayerMark(player, "@n_jiao", 1)
+    room:throwCard(event:getCostData(self).cards, n_didiao.name, player, player)
   end,
 })
 

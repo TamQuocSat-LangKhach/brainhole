@@ -2,7 +2,12 @@ local jijiu = fk.CreateSkill {
   name = "n_jijiu",
 }
 
+Fk:loadTranslationTable{
+  ["n_jijiu"] = "急救",
+  [":n_jijiu"] = "你的回合外，你可以将一张红色牌当【桃】使用；当其他角色进入濒死状态时，你可以先对其使用一张【桃】。",
 
+  ["#n_jijiu-use"] = "急救：你可以先对 %dest 使用一张【桃】",
+}
 
 jijiu:addEffect("viewas", {
   anim_type = "support",

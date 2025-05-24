@@ -1,15 +1,15 @@
 local poulian = fk.CreateSkill {
-
   name = "n_poulian",
-
-  tags = {},
-
 }
 
---当其他角色一次性获得不少于两张牌时，你可以改为由你获得它们，然后不能再对其发动此技能直到其进入濒死状态。
+Fk:loadTranslationTable{
+  ["n_poulian"] = "裒敛",
+  [":n_poulian"] = "当其他角色一次性获得不少于两张牌时，你可以改为由你获得它们，然后不能再对其发动此技能直到其进入濒死状态。",
+
+  ["#n_poulian"] = "裒敛：%dest 即将获得 %arg 张牌，是否改为由你获得？",
+}
 
 poulian:addEffect(fk.BeforeCardsMove, {
-  name = "n_poulian",
   anim_type = "control",
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(poulian.name) then return false end

@@ -2,7 +2,10 @@ local n_cizhi = fk.CreateSkill {
   name = "n_cizhi",
 }
 
-
+Fk:loadTranslationTable{
+  ["n_cizhi"] = "刺智",
+  [":n_cizhi"] = "当你对一名角色造成伤害后，若你的体力值不大于其，则你可以对其造成1点伤害。",
+}
 
 n_cizhi:addEffect(fk.Damage, {
   name = "n_cizhi",

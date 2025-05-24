@@ -1,12 +1,24 @@
 local leiji = fk.CreateSkill {
-
   name = "n_leiji",
-
-  tags = { Skill.Compulsory, },
-
+  tags = { Skill.Compulsory },
 }
 
+Fk:loadTranslationTable{
+  ["n_leiji"] = "雷祭",
+  [":n_leiji"] = "锁定技，当一名角色的判定结果确定后：<br>"..
+  "♠，其进行一次【闪电】的判定；<br>"..
+  "<font color='red'>♥</font>，你获得判定牌；<br>"..
+  "♣：其受到1点雷属性伤害；<br>"..
+  "<font color='red'>♦</font>：其摸一张牌。<br>"..
+  "你受到伤害后，令伤害来源判定；你使用黑色牌指定目标后，令所有目标进行判定。",
 
+  ["$n_leiji1"] = "天非苍苍之天，岂照昏昏之路？",
+  ["$n_leiji2"] = "承景灵之冥符，拟血积而荡秽。",
+  ["$n_leiji3"] = "天雷无妄，天诛难免！",
+  ["$n_leiji4"] = "阐道法、施符水，天地秀气当为人用。",
+  ["$n_leiji5"] = "金蛇乱掣，电母生嗔！",
+  ["$n_leiji6"] = "饥则食、冷则衣，小儿之理大人不知！",
+}
 
 leiji:addEffect(fk.FinishJudge, {
   name = 'n_leiji',

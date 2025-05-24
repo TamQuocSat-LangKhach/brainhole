@@ -6,12 +6,12 @@ Fk:loadTranslationTable{
   ["n_kaoda"] = "拷打",
   [":n_kaoda"] = "出牌阶段限一次，你可以摸一张牌并控制一名其他角色，直到回合结束或有角色进入濒死阶段。",
   ["@@n_kaoda-turn"] = "被拷打",
-  ["#n_kaoda-active"] = "拷打：控制一名其他角色",
+  ["#n_kaoda"] = "拷打：控制一名其他角色",
 }
 
 kaoda:addEffect('active', {
   anim_type = "offensive",
-  prompt = "#n_kaoda-active",
+  prompt = "#n_kaoda",
   max_card_num = 0,
   target_num = 1,
   can_use = function(self, player)

@@ -1,12 +1,14 @@
 local dutian = fk.CreateSkill {
-
   name = "n_dutian",
-
-  tags = { Skill.Compulsory, },
-
+  tags = { Skill.Compulsory },
 }
 
+Fk:loadTranslationTable{
+  ["n_dutian"] = "度田",
+  [":n_dutian"] = "锁定技，你获得牌后，记录获得的数量。当你使用点数为X的牌后，你摸两张牌并将记录数设为X+1（X为记录的数量）。",
 
+  ["@n_dutian"] = "度田",
+}
 
 dutian:addEffect(fk.CardUsing, {
   anim_type = "drawcard",

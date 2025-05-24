@@ -1,15 +1,11 @@
 local extension = Package:new("brainhole")
---extension:addGameMode(require "packages.brainhole.pkg.brainhole.melee")
---extension:addGameMode(require "packages.brainhole.pkg.brainhole.samemode")
+
 extension.extensionName = "brainhole"
 
 extension:loadSkillSkelsByPath("./packages/brainhole/pkg/brainhole/skills")
-dofile("packages/brainhole/pkg/brainhole/trans.lua")
-Fk:loadTranslationTable{
-  ["brainhole"] = "脑洞包",
-}
 
 Fk:loadTranslationTable{
+  ["brainhole"] = "脑洞包",
   ["n_pigeon"] = "鸽",
 }
 
@@ -54,7 +50,7 @@ Fk:loadTranslationTable{
   ["n_youmukon"] = "妖梦厨",
   ["designer:n_youmukon"] = "妖梦厨",
   ["~n_youmukon"] = "（Biu~）",
-  ["$n_youmukon_win_audio"] = "（Spell Card Bonus!）",
+  ["!n_youmukon"] = "（Spell Card Bonus!）",
 }
 
 local emoprincess = General(extension, "n_emoprincess", "n_pigeon", 3, 3, General.Female)
@@ -80,7 +76,7 @@ nyutan:addCompanions{ "os__niujin", "niufu" }
 nyutan:addSkills { "n_tuguo", "n_niuzhi" }
 Fk:loadTranslationTable{
   ["n_nyutan"] = "Nyutan_",
-  ["n_niuzhi"] = "牛智",
+  ["designer:n_nyutan"] = "notify",
 }
 
 local ralph = General(extension, "n_ralph", "n_pigeon", 3)
@@ -89,11 +85,13 @@ ralph.trueName = "th_kogasa"
 ralph:addSkills { "n_subian", "n_rigeng", "n_fanxiu" }
 Fk:loadTranslationTable{
   ["n_ralph"] = "Ｒ神",
+  ["designer:n_ralph"] = "notify",
 }
 
 General(extension, "n_0t", "n_pigeon", 3, 3, General.Female):addSkills { "n_cejin", "n_yinghui" }
 Fk:loadTranslationTable{
   ["n_0t"] = "聆听",
+  ["designer:n_0t"] = "notify",
 }
 
 General(extension, "n_notify", "n_pigeon", 3):addSkills { "n_biancheng", "n_tiaoshi", "n_baogan" }
@@ -101,19 +99,59 @@ Fk:loadTranslationTable{
   ["n_notify"] = "Notify_",
   ["designer:n_notify"] = "notify",
 }
+
 General(extension, "n_mabaoguo", "qun", 4):addSkills { "n_hunyuan", "n_lianbian"}
 Fk:loadTranslationTable{
   ["n_mabaoguo"] = "马保国",
+  ["designer:n_mabaoguo"] = "notify",
   ["~n_mabaoguo"] = "这两个年轻人不讲武德，来，骗！来，偷袭！我六十九岁的老同志，这好吗这不好。",
 }
-General(extension, "n_xujiale", "qun", 4):addSkills { "n_pengji", "n_songji"}
-General(extension, "n_jiege", "qun", 4):addSkills { "n_yaoyin", "n_kangkang"}
-General(extension, "n_awei", "qun", 3):addSkills { "n_suijie", "n_jujie"}
-General(extension, "n_dingzhen", "qun", 4):addSkills { "n_yangwu", "n_chunzhen"}
-General(extension, "n_guojicheng", "qun", 3):addSkills { "n_chiyao", "n_rulai"}
-General(extension, "n_shaheshang", "god", 3):addSkills { "n_liusha", "n_kuli"}
 
-extension:addGameMode(require("packages/brainhole/pkg/brainhole/melee"))
-extension:addGameMode(require("packages/brainhole/pkg/brainhole/samemode"))
+General(extension, "n_xujiale", "qun", 4):addSkills { "n_pengji", "n_songji"}
+Fk:loadTranslationTable{
+  ["n_xujiale"] = "徐嘉乐",
+  ["~n_xujiale"] = "最后一次啊，注意看啊",
+  ["#n_xujiale"] = "厨邦大师",
+  ["designer:n_xujiale"] = "穈穈哒的招来",
+  ["cv:n_xujiale"] = "徐嘉乐",
+  ["illustrator:n_xujiale"] = "视频截图",
+}
+
+General(extension, "n_jiege", "qun", 4):addSkills { "n_yaoyin", "n_kangkang"}
+Fk:loadTranslationTable{
+  ["n_jiege"] = "杰哥",
+  ["#n_jiege"] = "转大人指导",
+  ["designer:n_jiege"] = "zyc12241252",
+  ["illustrator:n_jiege"] = "网络",
+  ["~n_jiege"] = "阿玮…你要干嘛…对不起…",
+}
+
+General(extension, "n_awei", "qun", 3):addSkills { "n_suijie", "n_jujie"}
+Fk:loadTranslationTable{
+  ["n_awei"] = "阿玮",
+  ["#n_awei"] = "在杰难逃",
+  ["designer:n_awei"] = "Notify",
+  ["illustrator:n_awei"] = "网络",
+  ["~n_awei"] = "透，死了啦，都是你害的啦，拜托！",
+}
+
+General(extension, "n_dingzhen", "qun", 4):addSkills { "n_yangwu", "n_chunzhen"}
+Fk:loadTranslationTable{
+  ["n_dingzhen"] = "丁真",
+}
+
+General(extension, "n_guojicheng", "qun", 3):addSkills { "n_chiyao", "n_rulai"}
+Fk:loadTranslationTable{
+  ["n_guojicheng"] = "郭继承",
+  ["~n_guojicheng"] = "你怎么可以骂老师…",
+}
+
+General(extension, "n_shaheshang", "god", 3):addSkills { "n_liusha", "n_kuli"}
+Fk:loadTranslationTable{
+  ["n_shaheshang"] = "沙和尚",
+  ["#n_shaheshang"] = "任劳任怨",
+  ["designer:n_shaheshang"] = "西游杀",
+  ["illustrator:n_shaheshang"] = "",
+}
 
 return extension

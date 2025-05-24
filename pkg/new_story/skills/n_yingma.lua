@@ -1,15 +1,14 @@
 local n_yingma = fk.CreateSkill {
-
   name = "n_yingma",
-
-  tags = { Skill.Compulsory, },
-
+  tags = { Skill.Compulsory },
 }
 
-
+Fk:loadTranslationTable{
+  ["n_yingma"] = "赢麻",
+  [":n_yingma"] = "锁定技，准备阶段，若你体力上限小于7，加1点上限。",
+}
 
 n_yingma:addEffect(fk.EventPhaseStart, {
-  name = "n_yingma",
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(n_yingma.name) and player.phase == Player.Start and player.maxHp < 7
   end,

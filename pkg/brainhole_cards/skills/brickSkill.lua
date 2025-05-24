@@ -2,10 +2,8 @@ local brickSkill = fk.CreateSkill {
   name = "n_brick_skill",
 }
 
-
-
 brickSkill:addEffect("cardskill", {
-  name = "n_brick_skill",
+  prompt = "#n_brick_skill",
   max_round_use_time = 1,
   can_use = function(self, player, card, extra_data)
     return (extra_data and extra_data.bypass_times) or table.find(Fk:currentRoom().alive_players, function(p)

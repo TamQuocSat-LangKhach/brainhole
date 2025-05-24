@@ -1,15 +1,25 @@
 local n_huiwan = fk.CreateSkill {
-
   name = "n_huiwan",
-
-  tags = {},
-
 }
 
+Fk:loadTranslationTable{
+  ["n_huiwan"] = "会玩",
+  [":n_huiwan"] = "出牌阶段限一次，你可以弃置任意张牌并摸等量的牌。若你以此法弃置了所有的手牌，你多摸一张牌。",
 
+  ["n_huiwan_dont_use"] = "我觉得自己已经很会玩了，不需要“会玩”",
+  ["n_huiwan_ak"] = "将AK置顶，若有则再将若干张【杀】置顶",
+  ["n_huiwan_exnihilo"] = "将尽可能多的无中生有置顶",
+  ["n_huiwan_snatch"] = "将一张拆和尽可能多的顺手置顶",
+  ["n_huiwan_aoe"] = "将尽可能多的AOE和决斗置顶",
+  ["n_huiwan_delay"] = "将一兵一乐置顶，摸牌后再将一张黑桃牌置顶",
+  ["n_huiwan_equips"] = "小会玩龟缩防守，简单置顶装备栏缺失的装备",
+  ["n_huiwan_peach"] = "状态有点差，将最多等同于损失体力值的桃子置顶",
+
+  ["$n_huiwan1"] = "不急，吾等必一击制敌。",
+  ["$n_huiwan2"] = "纵横捭阖，自有制衡之道。",
+}
 
 n_huiwan:addEffect("active", {
-  name = "n_huiwan",
   anim_type = "drawcard",
   min_card_num = 1,
   target_num = 0,

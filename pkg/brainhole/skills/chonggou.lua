@@ -15,12 +15,26 @@ chonggou:addEffect(fk.EventPhaseStart, {
     local room = player.room
     for _, p in ipairs(room.alive_players) do
       if p:getMark("@@n_kaoda-turn") > 0 then
-        p:drawCards(3, self.name)
-        room:askForDiscard(p, 3, 3, true, self.name, false)
+        p:drawCards(3, chonggou.name)
+        room:askToDiscard(p, {
+          min_num = 3,
+          max_num = 3,
+          include_equip = true,
+          skill_name = chonggou.name,
+          cancelable = false,
+        })
       end
     end
-    player:drawCards(3, self.name)
-    room:askForDiscard(player, 3, 3, true, self.name, false)
+    if not player.dead then
+      player:drawCards(3, chonggou.name)
+      room:askToDiscard(player, {
+        min_num = 3,
+        max_num = 3,
+        include_equip = true,
+        skill_name = chonggou.name,
+        cancelable = false,
+      })
+    end
   end,
 })
 

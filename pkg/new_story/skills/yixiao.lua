@@ -1,15 +1,27 @@
 local yixiao = fk.CreateSkill {
-
   name = "n_yixiao",
-
-  tags = {},
-
 }
 
+Fk:loadTranslationTable{
+  ["n_yixiao"] = "义孝",
+  [":n_yixiao"] = "准备阶段，若场上没有“义父”，你须令一名其他角色获得“义父”标记；若有，你可以对其使用一张无视距离的【杀】，然后移动“义父”标记。"..
+  "“义父”的出牌阶段开始时，你摸一张牌并视为对其指定的除你以外的角色使用【决斗】。",
 
+  ["@@n_yifu"] = "义父",
+  ["#n_yixiao-choose"] = "义孝: 你必须选择一名其他角色获得“义父”标记",
+  ["#n_yixiao-use"] = "义孝: 你可以对“义父”使用【杀】，之后移动“义父”标记",
+  ["#n_yixiao-move"] = "义孝: 请移动“义父”标记到另一名其他角色",
+  ["#n_yixiao-duel"] = "义孝: 指定一名角色，令吕布和他决斗",
+
+  ["$n_yixiao1"] = "公若不弃，布愿拜为义父。",
+  ["$n_yixiao2"] = "飘零半生，只恨未逢明主。",
+  ["$n_yixiao3"] = "赴汤蹈火，在所不辞。",
+  ["$n_yixiao4"] = "相助义父，共图大业。",
+  ["$n_yixiao5"] = "奉先我儿！为何如此啊！",
+  ["$n_yixiao6"] = "奉先，何故变心？",
+}
 
 yixiao:addEffect(fk.EventPhaseStart, {
-  name = "n_yixiao",
   mute = true,
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(yixiao.name) and player.phase == Player.Start and
@@ -77,12 +89,11 @@ yixiao:addEffect(fk.EventPhaseStart, {
 })
 
 yixiao:addEffect(fk.EventPhaseStart, {
-  name = "#n_yixiao_trig",
   mute = true,
   can_trigger = function(self, event, target, player, data)
     return target.phase == Player.Play and player:hasSkill("n_yixiao") and target:getMark("@@n_yifu") > 0
   end,
-  on_cost = function() return true end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:drawCards(1, "n_yixiao")

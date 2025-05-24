@@ -1,15 +1,17 @@
 local panshi = fk.CreateSkill {
-
   name = "n_panshi",
-
-  tags = { Skill.Compulsory, },
-
+  tags = { Skill.Compulsory },
 }
 
+Fk:loadTranslationTable{
+  ["n_panshi"] = "叛弑",
+  [":n_panshi"] = "锁定技，你使用的【杀】对“义父”造成伤害时，此伤害+1；若此时是你的出牌阶段，则你于【杀】结算结束后结束出牌阶段。",
 
+  ["$n_panshi1"] = "我堂堂大丈夫，安肯为汝之义子？",
+  ["$n_panshi2"] = "老贼！我与你势不两立！",
+}
 
 panshi:addEffect(fk.DamageCaused, {
-  name = "n_panshi",
   anim_type = "offensive",
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(panshi.name) and player == target then
@@ -17,17 +19,9 @@ panshi:addEffect(fk.DamageCaused, {
     end
   end,
   on_use = function(self, event, target, player, data)
-    local logic = player.room.logic
-    data.damage = data.damage + 1
+    data:changeDamage(1)
     if player.phase == Player.Play then
-      local current = logic:getCurrentEvent()
-      local use_event = current:findParent(GameEvent.UseCard)
-      if not use_event then return end
-      local phase_event = use_event:findParent(GameEvent.Phase)
-      if not phase_event then return end
-      use_event:addExitFunc(function()
-        phase_event:shutdown()
-      end)
+      player:endPlayPhase()
     end
   end,
 })

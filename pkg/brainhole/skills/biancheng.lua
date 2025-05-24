@@ -4,8 +4,8 @@ local biancheng = fk.CreateSkill{
 
 Fk:loadTranslationTable{
   ["n_biancheng"] = "编程",
-  [":n_biancheng"] = "你可以使用或打出牌堆顶的非黑桃牌。",
-  ["#n_biancheng"] = "编程：你可以使用或打出牌堆顶的非黑桃牌%arg",
+  [":n_biancheng"] = "你可以使用或打出牌堆顶的非♠牌。",
+  ["#n_biancheng"] = "编程：你可以使用或打出牌堆顶的%arg",
 }
 
 biancheng:addEffect('viewas', {
@@ -22,7 +22,7 @@ biancheng:addEffect('viewas', {
   view_as = function(self, player)
     local card = Fk:getCardById(Fk:currentRoom().draw_pile[1])
     if not card then return nil end
-    if Self:getMark("@@n_baogan") == 0 and card.suit == Card.Spade then return nil end
+    if player:getMark("@@n_baogan") == 0 and card.suit == Card.Spade then return nil end
     return card
   end,
   before_use = function(self, player, use)

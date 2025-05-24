@@ -2,107 +2,80 @@ local n_songji = fk.CreateSkill {
   name = "n_songji",
 }
 
----@param player ServerPlayer
-local function songjiCanUse(player)
-  local canSlash = not player:prohibitUse(Fk:cloneCard("slash"))
-  local canPeach = not player:prohibitUse(Fk:cloneCard("peach"))
+Fk:loadTranslationTable{
+  ["n_songji"] = "颂鸡",
+  [":n_songji"] = "当你发动〖烹鸡〗后，若摸的牌和弃置的牌中有牌名相同，你可以将这些相同的牌中的一张当【杀】或【桃】使用，"..
+  "然后你本阶段〖烹鸡〗和〖颂鸡〗失效并摸一张牌。",
 
-  canSlash = canSlash and table.find(player.room:getOtherPlayers(player, false), function(p)
-    return player:inMyAttackRange(p) and
-      not player:isProhibited(p, Fk:cloneCard("slash"))
-  end)
-  canPeach = canPeach and player:isWounded()
-  return canSlash, canPeach
-end
+  ["#n_songji-use"] = "颂鸡：你已经做出了数一数二的烧鸡，将其中一张牌当【杀】或【桃】使用",
 
----@param player ServerPlayer
----@param move MoveCardsData
-local function songjiCheckMove(player, move)
-  local cards = player:getMark("n_pengji_dis")
-  local valid = {}
-  for _, info in ipairs(move.moveInfo) do
-    if table.find(cards, function(id)
-      return Fk:getCardById(id).trueName == Fk:getCardById(info.cardId).trueName
-    end) then table.insert(valid, info.cardId) end
-  end
-  return valid
-end
+  ["$n_songji1"] = "这个烧鸡，皮酥脆，肉滑有汁，骨都带味",
+  ["$n_songji2"] = "所以是数一数二的烧鸡！",
+}
 
-n_songji:addEffect(fk.AfterCardsMove, {
-  name = "n_songji",
+n_songji:addEffect(fk.AfterSkillEffect, {
   anim_type = "offensive",
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(n_songji.name) then return end
-    if player:getMark("n_songji-phase") > 0 then return end
-    for _, move in ipairs(data) do
-      if move.skillName == "n_pengji" and move.to == player
-        and move.moveReason == fk.ReasonDraw then
-        local a, b = songjiCanUse(player)
-        if #songjiCheckMove(player, move) > 0 and (a or b) then
+    if target == player and player:hasSkill(n_songji.name) and data.skill.name == "n_pengji" and not player:isKongcheng() then
+      local skill_event = player.room.logic:getCurrentEvent():findParent(GameEvent.SkillEffect, true)
+      if skill_event and skill_event.data.skill.name == "n_pengji" then
+        local discard, draw = {}, {}
+        skill_event:searchEvents(GameEvent.MoveCards, 1, function (e)
+          for _, move in ipairs(e.data) do
+            if move.from == player and move.moveReason == fk.ReasonDiscard and move.skillName == "n_pengji" then
+              for _, info in ipairs(move.moveInfo) do
+                table.insertIfNeed(discard, info.cardId)
+              end
+            end
+            if move.to == player and move.moveReason == fk.ReasonDraw and move.skillName == "n_pengji" then
+              for _, info in ipairs(move.moveInfo) do
+                if table.contains(player:getCardIds("h"), info.cardId) then
+                  table.insertIfNeed(draw, info.cardId)
+                end
+              end
+            end
+          end
+        end)
+        draw = table.filter(draw, function(id)
+          return table.find(discard, function (id2)
+            return Fk:getCardById(id).trueName == Fk:getCardById(id2).trueName
+          end)
+        end)
+        if #draw > 0 then
+          event:setCostData(self, {cards = draw})
           return true
         end
       end
     end
   end,
   on_cost = function(self, event, target, player, data)
-    local ids
-    for _, move in ipairs(data) do
-      if move.skillName == "n_pengji" and move.to == player
-        and move.moveReason == fk.ReasonDraw then
-        ids = songjiCheckMove(player, move)
-        break
-      end
-    end
     local room = player.room
-    local c = room:askForCard(player, 1, 1, true, n_songji.name, true,
-      tostring(Exppattern{ id = ids }), "@n_songji")
-    if #c == 0 then return end
-    local choices = {}
-    local s, p = songjiCanUse(player)
-    if s then table.insert(choices, "slash") end
-    if p then table.insert(choices, "peach") end
-    -- table.insert(choices, "Cancel")
-    local choice = room:askForChoice(player, choices, n_songji.name)
-    if choice == "peach" then
-      event:setCostData(self, {
-        cards = c,
-        cname = choice,
-        tos = {player.id},
-      })
+    local use = room:askToUseVirtualCard(player, {
+      name = {"slash", "peach"},
+      skill_name = n_songji.name,
+      prompt = "#n_songji-use",
+      cancelable = true,
+      extra_data = {
+        bypass_times = true,
+        extraUse = true,
+      },
+      card_filter = {
+        n = 1,
+        cards = event:getCostData(self).cards,
+      },
+      skip = true,
+    })
+    if use then
+      event:setCostData(self, {extra_data = use})
       return true
-    elseif choice == "slash" then
-      local targets = table.filter(room:getOtherPlayers(player, false), function(p)
-        return player:inMyAttackRange(p) and
-          not player:isProhibited(p, Fk:cloneCard("slash"))
-      end)
-      targets = table.map(targets, Util.IdMapper)
-      local p2 = room:askForChoosePlayers(player, targets, 1, 1, "@n_songji_slash",
-        n_songji.name, true)
-      if #p2 ~= 0 then
-        event:setCostData(self, {
-          cards = c,
-          cname = choice,
-          tos = p2,
-        })
-        return true
-      end
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local use = {}
-    local dat = event:getCostData(self)
-    use.from = player
-    use.tos = table.map(dat,function (pid)
-      return room:getPlayerById(pid)
-    end)
-    local card = Fk:cloneCard(dat.cname)
-    card:addSubcard(dat.cards[1])
-    card.skillName = n_songji.name
-    use.card = card
-    use.extraUse = true
-    room:useCard(use)
-    room:addPlayerMark(player, "n_songji-phase", 1)
+    room:useCard(event:getCostData(self).extra_data)
+    if player.dead then return end
+    room:invalidateSkill(player, "n_pengji", "-phase")
+    room:invalidateSkill(player, n_songji.name, "-phase")
     player:drawCards(1, n_songji.name)
   end,
 })

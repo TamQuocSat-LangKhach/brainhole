@@ -4,8 +4,9 @@ local tuguo = fk.CreateSkill{
 
 Fk:loadTranslationTable{
   ["n_tuguo"] = "图国",
-  [":n_tuguo"] = "出牌阶段限一次，你可以对自己造成1点伤害，然后获得一张<a href='heg_trick'>国战锦囊</a>或一枚<a href='heg_mark'>国战标记</a>（每种牌名/标记限两次，获得卡牌的花色点数随机）。",
-  ["#n_tuguo-active"] = "图国: 你可以对自己造成1伤害，然后拿国战牌或标记",
+  [":n_tuguo"] = "出牌阶段限一次，你可以对自己造成1点伤害，然后获得一张<a href='heg_trick'>国战锦囊</a>或"..
+  "一枚<a href='heg_mark'>国战标记</a>（每种牌名/标记限两次，获得卡牌的花色点数随机）。",
+
   ["heg_trick"] = "<b>国战锦囊</b>：<br/><b>远交近攻</b>：出牌阶段，选择势力与你不同的一名角色，其摸一张牌，你摸三张牌。<br/>" ..
   "<b>知己知彼</b>：出牌阶段，选择一名其他角色，观看其手牌<s>或一张暗置的武将牌</s>。<br/>" ..
   "<b>以逸待劳</b>：出牌阶段，你和与你势力相同的角色各摸两张牌，然后弃置两张牌。<br/>" ..
@@ -18,6 +19,8 @@ Fk:loadTranslationTable{
   "<b>阴阳鱼</b>：①出牌阶段，你可弃一枚“阴阳鱼”，摸一张牌；②弃牌阶段开始时，你可弃一枚“阴阳鱼”，此回合手牌上限+2。<br/>" ..
   "<b>珠联璧合</b>：①出牌阶段，你可弃一枚“珠联璧合”，摸两张牌；②你可弃一枚“珠联璧合”，视为使用【桃】。<br/>" ..
   "<b>野心家</b>：你可将一枚“野心家”当以上三种中任意一种标记弃置并执行其效果。",
+
+  ["#n_tuguo"] = "图国: 你可以对自己造成1伤害，获得国战牌或标记",
 }
 
 local tuguo_choices = {
@@ -32,7 +35,7 @@ local H = require 'packages/hegemony/util'
 
 tuguo:addEffect("active", {
   anim_type = "drawcard",
-  prompt = "#n_tuguo-active",
+  prompt = "#n_tuguo",
   max_card_num = 0,
   target_num = 0,
   interaction = function(self, nyunyu)

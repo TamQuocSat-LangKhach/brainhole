@@ -1,19 +1,19 @@
 local baogan = fk.CreateSkill{
   name = "n_baogan",
-  tags={Skill.Limited,},
+  tags = { Skill.Limited },
 }
 
 Fk:loadTranslationTable{
   ["n_baogan"] = "爆肝",
+  [":n_baogan"] = "限定技，出牌阶段，你可以令〖编程〗变得也可使用打出♠牌直到你下回合开始。",
+
+  ["#n_baogan"] = "爆肝：令“编程”也可使用打出♠牌直到你下回合开始！",
   ["@@n_baogan"] = "爆肝",
-  [":n_baogan"] = "限定技，出牌阶段，你可以令〖编程〗变得也可使用打出黑桃牌直到你下回合开始。",
-  ["#n_baogan"] = "爆肝:令“编程”也可使用打出黑桃牌直到你下回合开始！",
 }
 
 baogan:addEffect('active', {
   card_num = 0,
   target_num = 0,
-  frequency = Skill.Limited,
   prompt = "#n_baogan",
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryGame) == 0

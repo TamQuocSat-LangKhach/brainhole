@@ -1,12 +1,13 @@
 local fuyi = fk.CreateSkill {
-
   name = "n_fuyi",
-
-  tags = {},
-
 }
 
+Fk:loadTranslationTable{
+  ["n_fuyi"] = "抚夷",
+  [":n_fuyi"] = "出牌阶段限一次，你可以摸X+1张牌，弃置等量的牌。（X为“度田”记录的数量）",
 
+  ["#n_fuyi"] = "抚夷：你可以摸 %arg 张牌，再弃置 %arg 张牌",
+}
 
 fuyi:addEffect("active", {
   anim_type = "drawcard",

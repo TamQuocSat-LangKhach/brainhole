@@ -3,10 +3,16 @@ local yaoyin = fk.CreateSkill {
   tags = { Skill.Limited, },
 }
 
+Fk:loadTranslationTable{
+  ["n_yaoyin"] = "邀饮",
+  [":n_yaoyin"] = "限定技，出牌阶段，你可以失去1点体力并交给一名其他角色一张手牌（不能是你的上家），令其与你的上家交换座位，"..
+  "然后你视为对你和你的上家使用一张【酒】。",
 
+  ["$n_yaoyin1"] = "我一个人住，我的房子还蛮大的，欢迎你们来我家玩。",
+  ["$n_yaoyin2"] = "如果要来的话，我可以带你们去超商，买一些好吃的哦。",
+}
 
 yaoyin:addEffect("active", {
-  name = "n_yaoyin",
   anim_type = "control",
   card_num = 1,
   target_num = 1,
@@ -28,14 +34,7 @@ yaoyin:addEffect("active", {
     room:obtainCard(target, card, false, fk.ReasonGive)
     local prev = player:getLastAlive() --[[ @as ServerPlayer ]]
     room:swapSeat(prev, target)
-    local card = Fk:cloneCard("analeptic")
-    card.skillName = yaoyin.name
-    local use = {}
-    use.from = player
-    use.tos = { player, target }
-    use.card = card
-    use.extraUse = true
-    room:useCard(use)
+    room:useVirtualCard("analeptic", nil, player, {player, target}, yaoyin.name, true)
   end,
 })
 

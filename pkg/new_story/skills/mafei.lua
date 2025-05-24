@@ -1,12 +1,15 @@
 local mafei = fk.CreateSkill {
-
   name = "n_mafei",
-
-  tags = {  },
-
 }
 
+Fk:loadTranslationTable{
+  ["n_mafei"] = "麻沸",
+  [":n_mafei"] = "出牌阶段，你可以弃置一张红色手牌，视为对一名已受伤的角色使用【桃】；每回合限一次，当你对其他角色使用【桃】时，"..
+  "你可以令其立即死亡（改为一轮休整），然后你从牌堆获得一张红色牌。",
 
+  ["#n_mafei-active"] = "麻沸：你可以弃置一张红色手牌，视为对一名已受伤的角色使用【桃】",
+  ["#n_mafei-invoke"] = "是否发动技能“麻沸”，令 %dest 休整一轮",
+}
 
 mafei:addEffect("active", {
   name = "n_mafei",
@@ -14,7 +17,7 @@ mafei:addEffect("active", {
   prompt = "#n_mafei-active",
   card_num = 1,
   card_filter =function (self, player, to_select, selected)
-        return #selected == 0 and Fk:getCardById(to_select).color == Card.Red and
+    return #selected == 0 and Fk:getCardById(to_select).color == Card.Red and
       Fk:currentRoom():getCardArea(to_select) == Player.Hand and
       not player:prohibitDiscard(Fk:getCardById(to_select))
   end,
@@ -33,20 +36,17 @@ mafei:addEffect("active", {
 })
 
 mafei:addEffect(fk.CardUsing, {
-  name = "#n_mafei_trigger",
-  --mafei,
-  mute = true,
+  anim_type = "control",
   can_trigger = function (self, event, target, player, data)
     return target == player and player:hasSkill(mafei.name) and data.card.trueName == "peach"
-      and player:getMark("n_mafei-turn") == 0
-      and table.find(data.tos, function(pid) return pid ~= player end)
+      and player:usedEffectTimes(self.name) == 0
+      and table.find(data.tos, function(p) return p ~= player end)
   end,
   on_cost = function (self, event, target, player, data)
-   
-    if  player.room:askToSkillInvoke(player,{
-      skill_name=mafei.name,
-      data=data,
-      prompt="#n_mafei-invoke::"..data.tos[1].id
+    if player.room:askToSkillInvoke(player,{
+      skill_name = mafei.name,
+      data = data,
+      prompt = "#n_mafei-invoke::"..data.tos[1].id
     }) then
       event:setCostData(self, { tos = data.tos })
       return true
@@ -54,14 +54,10 @@ mafei:addEffect(fk.CardUsing, {
   end,
   on_use = function (self, event, target, player, data)
     local room = player.room
-    room:notifySkillInvoked(player, mafei.name, "special")
-    player:broadcastSkillInvoke(mafei.name)
-    room:addPlayerMark(player, "n_mafei-turn")
-    for _, pid in ipairs(data.tos) do
-      if pid ~= player then
-        local p = pid
+    for _, p in ipairs(data.tos) do
+      if p ~= player then
         local record = room:getTag("n_mafei_rest") or {}
-        table.insert(record, pid)
+        table.insert(record, p.id)
         room:setTag("n_mafei_rest", record)
         room:killPlayer({ who = p })
       end
@@ -69,23 +65,20 @@ mafei:addEffect(fk.CardUsing, {
     if player:isAlive() then
       local cards = room:getCardsFromPileByRule(".|.|heart,diamond", 1)
       if #cards > 0 then
-        room:obtainCard(player, cards[1], false, fk.ReasonJustMove, player, mafei.name)
+        room:obtainCard(player, cards, false, fk.ReasonJustMove, player, mafei.name)
       end
     end
   end,
 })
 mafei:addEffect(fk.BeforeGameOverJudge, {
-  name = "#n_mafei_trigger",
-  --mafei,
-  mute = true,
   can_refresh = function (self, event, target, player, data)
-    return table.contains(player.room:getTag("n_mafei_rest") or {}, target)
+    return table.contains(player.room:getTag("n_mafei_rest") or {}, target.id)
   end,
   on_refresh = function (self, event, target, player, data)
     target._splayer:setDied(false)
     local room = player.room
     local record = room:getTag("n_mafei_rest") or {}
-    table.removeOne(record, target)
+    table.removeOne(record, target.id)
     room:setTag("n_mafei_rest", record)
     room:setPlayerRest(target, 1)
   end

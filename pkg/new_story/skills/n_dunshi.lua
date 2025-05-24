@@ -1,6 +1,24 @@
 local n_dunshi = fk.CreateSkill {
   name = "n_dunshi",
 }
+
+Fk:loadTranslationTable{
+  ["n_dunshi"] = "炖世",
+  [":n_dunshi"] = "每回合限一次，你可视为使用一张君子锦囊（拆顺无借懈笑瞒），然后当前回合角色本回合下次造成伤害时，你选择两项：<br>"..
+  "1.防止此伤害，选择1个名字含有“典急孝乐崩赢”的同音字的技能令其获得；<br>"..
+  "2.减1点体力上限并摸X张牌（X为你选择选项3的次数）；<br>"..
+  "3.删除你本次视为使用的牌名。",
+
+  ["@$n_dunshi"] = "炖世",
+  ["n_dunshi1"] = "防止此伤害，选择1个“君子六艺”的技能令 %src 获得",
+  ["n_dunshi2"] = "减1点体力上限并摸 %arg 张牌",
+  ["n_dunshi3"] = "删除你本次视为使用的牌名：%arg",
+  ["#n_dunshi-chooseskill"] = "炖世：选择令%dest获得的技能",
+
+  ["$n_dunshi1"] = "天下皆黑，于我独白。",
+  ["$n_dunshi2"] = "我不忿世，唯炖之而自觞。",
+}
+
 local U = require "packages/utility/utility"
 
 local n_dunshi_names = { "dismantlement", "snatch", "ex_nihilo", "collateral", "nullification", "daggar_in_smile",
@@ -92,6 +110,7 @@ n_dunshi:addEffect(fk.DamageCaused, {
       })
       table.insert(chosen, table.indexOf(all_choices, choice))
       if choice:startsWith("n_dunshi1") then
+        data:preventDamage()
         local skills = {}
         for _, general in ipairs(Fk:getAllGenerals()) do
           for _, skillName in ipairs(general:getSkillNameList()) do
@@ -125,9 +144,6 @@ n_dunshi:addEffect(fk.DamageCaused, {
       elseif choice:startsWith("n_dunshi3") then
         room:removeTableMark(player, "@$n_dunshi", card_name)
       end
-    end
-    if table.contains(chosen, 1) then
-      return true
     end
   end,
 })
