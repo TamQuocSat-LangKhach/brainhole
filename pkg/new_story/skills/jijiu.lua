@@ -16,7 +16,7 @@ jijiu:addEffect("viewas", {
     if #selected == 1 then return false end
     return Fk:getCardById(to_select).color == Card.Red
   end,
-  view_as = function(self, cards)
+  view_as = function(self, player, cards)
     if #cards ~= 1 then
       return nil
     end
